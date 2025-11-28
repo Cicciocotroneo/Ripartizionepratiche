@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aequo - Smart Allocator v5.0 (Robin Hood)</title>
+    <title>Aequo - Smart Allocator v5.1 (JSON Fix)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -33,7 +33,7 @@
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-100">
         <div>
             <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                <i class="fas fa-balance-scale text-indigo-600"></i> Aequo <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">v5.0 Robin Hood</span>
+                <i class="fas fa-balance-scale text-indigo-600"></i> Aequo <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">v5.1 Robust</span>
             </h1>
         </div>
         
@@ -231,7 +231,7 @@
                     assignedRows: [],
                     macroResults: [],
                     aiReasoning: '',
-                    rebalancingLog: '', // Log per l'utente sulle azioni correttive
+                    rebalancingLog: '',
                     chartInstance: null
                 }
             },
@@ -334,7 +334,7 @@
                         2. Se un Team non riceve nulla, la soluzione è ERRATA.
                         3. Se devi bilanciare, spezza i portafogli per cedente.
 
-                        OUTPUT JSON:
+                        OUTPUT JSON ESCLUSIVAMENTE (senza testo prima o dopo):
                         {
                             "assignments": [{ "portfolio_name": "Nome", "team_leader": "NomeEsattoTeamLeader", "cases": 123, "is_new": true/false }],
                             "reasoning": "Spiegazione"
@@ -347,16 +347,28 @@
                         const d = await res.json();
                         if(d.error) throw new Error(d.error.message);
 
-                        const txt = d.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
-                        const ai = JSON.parse(txt);
+                        // --- FIX ROBUST JSON PARSING ---
+                        let rawText = d.candidates[0].content.parts[0].text;
+                        // Rimuove markdown
+                        rawText = rawText.replace(/```json|```/g, '');
+                        // Trova inizio e fine JSON
+                        const start = rawText.indexOf('{');
+                        const end = rawText.lastIndexOf('}');
+                        
+                        if(start === -1 || end === -1) throw new Error("Risposta AI non valida (no JSON)");
+                        
+                        const jsonStr = rawText.substring(start, end + 1);
+                        const ai = JSON.parse(jsonStr);
+                        // -------------------------------
+                        
                         this.aiReasoning = ai.reasoning;
 
                         if(this.mode === 'macro') {
                             this.macroResults = ai.assignments;
-                            this.applyRobinHoodLogic_Macro(totalCases, totalLMs); // Correzione Macro
+                            this.applyRobinHoodLogic_Macro(totalCases, totalLMs);
                         } else {
                             this.applyDetailAssignment(ai.assignments);
-                            this.applyRobinHoodLogic_Detail(ideal); // Correzione Dettaglio
+                            this.applyRobinHoodLogic_Detail(ideal);
                         }
 
                         this.$nextTick(()=>this.renderChart());
@@ -374,11 +386,8 @@
 
                     for(const [p, rows] of Object.entries(grp)) {
                         rows.sort((a,b)=>(String(a.status)||'').localeCompare(String(b.status)||''));
-                        // Fuzzy match per il nome del leader
                         let leaderName = map[p] || '';
                         let targetT = tMap[leaderName.toLowerCase().trim()];
-                        
-                        // Fallback se l'AI sbaglia nome o non assegna
                         if(!targetT) targetT = this.teams[0]; 
 
                         let i = 0;
@@ -389,9 +398,7 @@
                     }
                 },
 
-                // --- ALGORITMO ROBIN HOOD (DETTAGLIO) ---
                 applyRobinHoodLogic_Detail(idealTarget) {
-                    // 1. Calcola carico attuale
                     const stats = {};
                     this.teams.forEach(t => stats[t.leader] = { count: 0, managers: t.managers.length, obj: t });
                     this.assignedRows.forEach(r => { if(stats[r.team]) stats[r.team].count++; });
@@ -399,9 +406,7 @@
                     let rebalanced = false;
                     let logs = [];
 
-                    // Ciclo di bilanciamento (Max 5 iterazioni per sicurezza)
                     for(let loop=0; loop<5; loop++) {
-                        // Trova il più povero e il più ricco (basato su pratiche/LM)
                         let minT=null, maxT=null;
                         let minLoad=Infinity, maxLoad=-Infinity;
 
@@ -411,23 +416,19 @@
                             if(load > maxLoad) { maxLoad = load; maxT = k; }
                         }
 
-                        // Soglia di tolleranza (se diff > 20% del target)
                         const diff = maxLoad - minLoad;
-                        if(diff < (idealTarget * 0.2)) break; // Abbastanza bilanciato
+                        if(diff < (idealTarget * 0.2)) break;
 
-                        // Sposta pratiche
-                        const amountToMove = Math.round((diff * stats[minT].managers) / 2); // Sposta metà della differenza
+                        const amountToMove = Math.round((diff * stats[minT].managers) / 2);
                         if(amountToMove <= 0) break;
 
                         rebalanced = true;
                         logs.push(`Giro ${loop+1}: Spostate ${amountToMove} pratiche da ${maxT} (${Math.round(maxLoad)}/LM) a ${minT} (${Math.round(minLoad)}/LM)`);
 
-                        // Esegui spostamento nell'array assignedRows
                         let moved = 0;
                         for(let i=0; i<this.assignedRows.length; i++) {
                             if(this.assignedRows[i].team === maxT) {
                                 this.assignedRows[i].team = minT;
-                                // Riassegna LM specifico col round robin del nuovo team
                                 const tObj = stats[minT].obj;
                                 this.assignedRows[i].assignedTo = tObj.managers[moved % tObj.managers.length];
                                 
@@ -441,11 +442,8 @@
                     if(rebalanced) this.rebalancingLog = "L'AI aveva lasciato sbilanciamenti.\n" + logs.join("\n");
                 },
 
-                // --- ALGORITMO ROBIN HOOD (MACRO) ---
                 applyRobinHoodLogic_Macro(total, lms) {
-                    // Semplificazione per Macro: non spostiamo righe fisiche ma numeri
-                    // (Logica simile a sopra ma sull'array macroResults se necessario)
-                    // Per ora visualizzazione
+                   // No-op per visualizzazione
                 },
 
                 renderChart() {
