@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Portfolio Allocator & Dashboard</title>
+    <title>Aequo - NPL Allocator (Detail Mode)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
@@ -11,155 +11,177 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
-        .card { background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px; }
-        .btn { transition: all 0.2s; }
-        .btn:hover { transform: translateY(-1px); }
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f8fafc; }
+        .card { background: white; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 24px; margin-bottom: 24px; }
+        .loader { border: 4px solid #e2e8f0; border-top: 4px solid #6366f1; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .custom-scroll::-webkit-scrollbar { width: 8px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 4px; }
     </style>
 </head>
 <body>
 
-<div id="app" class="container mx-auto p-4 max-w-6xl">
+<div id="app" class="container mx-auto p-4 max-w-7xl">
 
-    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <h1 class="text-3xl font-bold text-gray-800"><i class="fas fa-chart-pie text-blue-600"></i> AI Portfolio Allocator</h1>
+    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-800"><i class="fas fa-balance-scale text-indigo-600"></i> Aequo <span class="text-sm font-normal text-gray-500">Row-Level Allocator</span></h1>
+            <p class="text-sm text-gray-500">Ottimizzazione massiva pratiche via AI</p>
+        </div>
         <div class="flex gap-2 w-full md:w-auto">
-            <input v-if="showApiKeyInput" type="password" v-model="tempApiKey" placeholder="Incolla API Key Gemini" class="border p-2 rounded flex-grow md:flex-grow-0">
-            <button @click="saveApiKey" class="bg-gray-800 text-white px-4 py-2 rounded btn whitespace-nowrap">
-                {{ hasApiKey ? 'Chiave Salvata (Resetta)' : 'Salva API Key' }}
+            <input v-if="!hasApiKey" type="password" v-model="tempApiKey" placeholder="API Key Gemini" class="border border-gray-300 p-2 rounded flex-grow">
+            <button @click="saveApiKey" class="bg-slate-800 text-white px-4 py-2 rounded hover:bg-slate-700 transition">
+                {{ hasApiKey ? 'Chiave Salvata' : 'Salva Key' }}
             </button>
+            <button v-if="hasApiKey" @click="resetApiKey" class="text-red-500 px-2 text-sm">Resetta</button>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <div class="card">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold text-gray-700">1. Gestione Team</h2>
-                <span class="text-sm bg-blue-100 text-blue-800 py-1 px-2 rounded">Tot LM: {{ totalLoanManagers }}</span>
-            </div>
+        <div class="lg:col-span-5 space-y-6">
             
-            <div class="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scroll">
-                <div v-for="(team, index) in teams" :key="index" class="flex gap-2 items-end bg-gray-50 p-3 rounded border">
-                    <div class="flex-1">
-                        <label class="text-xs text-gray-500">Team Leader</label>
-                        <input type="text" v-model="team.leader" class="w-full border p-1 rounded font-semibold" placeholder="Nome TL">
-                    </div>
-                    <div class="w-24">
-                        <label class="text-xs text-gray-500">N. LM</label>
-                        <input type="number" v-model="team.managers" class="w-full border p-1 rounded" min="1">
-                    </div>
-                    <button @click="removeTeam(index)" class="text-red-500 hover:text-red-700 p-2"><i class="fas fa-trash"></i></button>
+            <div class="card border-l-4 border-blue-500">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold text-gray-700">1. Import Dati (Excel)</h2>
+                    <span v-if="rawRows.length > 0" class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">
+                        {{ rawRows.length.toLocaleString() }} Righe caricate
+                    </span>
+                </div>
+                
+                <p class="text-sm text-gray-500 mb-3">
+                    Il file deve contenere le colonne: <strong>Portafoglio, Cedente, Id Pratica, Nome Pratica, Status</strong>.
+                </p>
+
+                <div class="flex items-center gap-3">
+                    <label class="cursor-pointer bg-blue-50 text-blue-700 hover:bg-blue-100 px-4 py-8 w-full border-2 border-dashed border-blue-200 rounded-lg text-center transition">
+                        <i class="fas fa-cloud-upload-alt text-2xl mb-2"></i><br>
+                        <span class="text-sm font-medium">Clicca per caricare Excel</span>
+                        <input type="file" @change="handleFileUpload" class="hidden" accept=".xlsx, .csv">
+                    </label>
+                </div>
+                
+                <div v-if="portfolioStats.length > 0" class="mt-4 max-h-40 overflow-y-auto custom-scroll border rounded text-sm">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50 sticky top-0">
+                            <tr>
+                                <th class="p-2">Portafoglio</th>
+                                <th class="p-2 text-right">Pratiche</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="stat in portfolioStats" :key="stat.name" class="border-t">
+                                <td class="p-2 truncate max-w-[150px]" :title="stat.name">{{ stat.name }}</td>
+                                <td class="p-2 text-right font-mono">{{ stat.count }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <button @click="addTeam" class="mt-4 w-full bg-blue-500 text-white py-2 rounded btn"><i class="fas fa-plus"></i> Aggiungi Team</button>
+
+            <div class="card border-l-4 border-indigo-500">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold text-gray-700">2. Team & Loan Managers</h2>
+                    <button @click="addTeam" class="text-indigo-600 hover:text-indigo-800 text-sm font-bold"><i class="fas fa-plus"></i> Nuovo Team</button>
+                </div>
+
+                <div class="space-y-4 max-h-[400px] overflow-y-auto custom-scroll pr-2">
+                    <div v-for="(team, idx) in teams" :key="idx" class="bg-gray-50 p-4 rounded-lg border border-gray-200 relative group">
+                        <button @click="removeTeam(idx)" class="absolute top-2 right-2 text-gray-300 hover:text-red-500"><i class="fas fa-trash"></i></button>
+                        
+                        <div class="mb-2">
+                            <label class="block text-xs font-bold text-gray-500 uppercase">Team Leader</label>
+                            <input type="text" v-model="team.leader" class="w-full bg-white border border-gray-300 rounded p-1.5 focus:border-indigo-500 outline-none" placeholder="Es. Mario Rossi">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-xs font-bold text-gray-500 uppercase">Loan Managers (Nomi)</label>
+                                <span class="text-xs bg-indigo-100 text-indigo-700 px-1.5 rounded">{{ team.managers.length }} LM</span>
+                            </div>
+                            <textarea 
+                                v-model="team.managerInput" 
+                                @blur="parseManagers(idx)"
+                                class="w-full bg-white border border-gray-300 rounded p-2 text-sm focus:border-indigo-500 outline-none h-20" 
+                                placeholder="Inserisci nomi separati da virgola o invio (es: Luca, Giulia, Marco...)"></textarea>
+                            <p class="text-xs text-gray-400 mt-1">Se vuoto, userà numerici (LM1, LM2...).</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button @click="calculateAssignment" :disabled="isProcessing || !hasApiKey || rawRows.length === 0" 
+                class="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-4 rounded-lg text-xl font-bold shadow-lg hover:shadow-xl transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3">
+                <span v-if="!isProcessing"><i class="fas fa-robot"></i> Genera Assegnazione</span>
+                <span v-else class="loader border-white border-t-transparent"></span>
+                <span v-if="isProcessing">{{ statusMessage }}</span>
+            </button>
+
         </div>
 
-        <div class="card">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold text-gray-700">2. Portafogli</h2>
-                <div>
-                    <input type="file" ref="fileInput" @change="handleFileUpload" class="hidden" accept=".csv, .xlsx, .xls">
-                    <button @click="$refs.fileInput.click()" class="bg-green-600 text-white px-3 py-1 rounded text-sm btn mr-2">
-                        <i class="fas fa-file-excel"></i> Importa Excel
+        <div class="lg:col-span-7 space-y-6">
+            
+            <div v-if="assignmentComplete" class="card">
+                <h3 class="text-gray-700 font-bold mb-4">📊 Bilanciamento Carichi (Post-Assegnazione)</h3>
+                <div class="h-64">
+                    <canvas id="loadChart"></canvas>
+                </div>
+                <div class="mt-4 text-xs text-center text-gray-500">
+                    Il grafico mostra il numero esatto di pratiche assegnate a ciascun Loan Manager nominativo.
+                </div>
+            </div>
+
+            <div v-if="assignmentComplete" class="card border-t-4 border-green-500 bg-green-50">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-green-900">Assegnazione Completata</h2>
+                        <p class="text-sm text-green-700">Tutte le {{ rawRows.length }} pratiche sono state assegnate.</p>
+                    </div>
+                    <button @click="exportExcel" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold shadow transition flex items-center gap-2">
+                        <i class="fas fa-file-excel"></i> Scarica Excel Finale
                     </button>
-                    <button @click="addPortfolio" class="bg-blue-500 text-white px-3 py-1 rounded text-sm btn">
-                        <i class="fas fa-plus"></i> Manuale
-                    </button>
                 </div>
-            </div>
 
-            <div class="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scroll">
-                <div v-for="(ptf, index) in portfolios" :key="index" class="bg-gray-50 p-3 rounded border relative transition hover:shadow-md">
-                    <button @click="removePortfolio(index)" class="absolute top-2 right-2 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
-                    
-                    <div class="grid grid-cols-2 gap-2 mb-2">
-                        <input type="text" v-model="ptf.name" placeholder="Nome Portafoglio" class="border p-1 rounded text-sm font-medium">
-                        <input type="text" v-model="ptf.cedant" placeholder="Cedente" class="border p-1 rounded text-sm">
+                <div class="bg-white p-4 rounded border border-green-200 mb-4">
+                    <h4 class="font-bold text-gray-800 mb-2 text-sm"><i class="fas fa-brain text-purple-500"></i> Strategia AI applicata:</h4>
+                    <p class="text-sm text-gray-600 whitespace-pre-line">{{ aiReasoning }}</p>
+                </div>
+
+                <div class="overflow-x-auto border rounded-lg bg-white max-h-96">
+                    <table class="w-full text-sm text-left text-gray-500">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0">
+                            <tr>
+                                <th class="px-4 py-3">ID Pratica</th>
+                                <th class="px-4 py-3">Ptf</th>
+                                <th class="px-4 py-3">Status</th>
+                                <th class="px-4 py-3 bg-yellow-50">Assegnato A (LM)</th>
+                                <th class="px-4 py-3 bg-blue-50">Team</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="row in assignedRows.slice(0, 50)" :key="row.id" class="border-b hover:bg-gray-50">
+                                <td class="px-4 py-2 font-mono text-xs">{{ row.id }}</td>
+                                <td class="px-4 py-2">{{ row.ptf }}</td>
+                                <td class="px-4 py-2">
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium" 
+                                        :class="row.status.toLowerCase().includes('chius') ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'">
+                                        {{ row.status }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-2 font-bold text-gray-900 bg-yellow-50">{{ row.assignedTo }}</td>
+                                <td class="px-4 py-2 text-gray-600 bg-blue-50">{{ row.team }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="p-2 text-center text-xs text-gray-400 bg-gray-50 border-t">
+                        Mostrate prime 50 di {{ assignedRows.length }} righe. Scarica Excel per il dettaglio completo.
                     </div>
-                    <div class="grid grid-cols-3 gap-2 mb-2">
-                        <input type="number" v-model="ptf.total_cases" placeholder="N. Pratiche" class="border p-1 rounded text-sm">
-                        <label class="flex items-center space-x-2 text-sm bg-white p-1 rounded border">
-                            <input type="checkbox" v-model="ptf.is_new" class="form-checkbox text-blue-600">
-                            <span>Nuovo?</span>
-                        </label>
-                    </div>
-                    <input type="text" v-model="ptf.status_string" placeholder="Status (es: Attive: 100, Chiuse: 50)" class="w-full border p-1 rounded text-sm text-gray-600">
                 </div>
             </div>
+
         </div>
     </div>
-
-    <div class="text-center my-6">
-        <button @click="calculateAssignment" :disabled="loading || !hasApiKey" class="bg-indigo-600 text-white px-8 py-3 rounded-lg text-xl font-bold shadow-lg btn flex items-center justify-center mx-auto gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
-            <span v-if="!loading"><i class="fas fa-brain"></i> Calcola Assegnazione e Grafici</span>
-            <span v-else class="loader"></span>
-            <span v-if="loading">Analisi AI in corso...</span>
-        </button>
-    </div>
-
-    <div v-if="result" class="animate-fade-in">
-        
-        <div class="card bg-gray-50 border border-gray-200">
-            <h3 class="text-lg font-bold text-gray-700 mb-4 border-b pb-2">📊 Dashboard Carico & Distribuzione</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="h-64 relative">
-                    <canvas id="chartWorkload"></canvas>
-                </div>
-                <div class="h-64 relative">
-                    <canvas id="chartDistribution"></canvas>
-                </div>
-            </div>
-            <div class="mt-4 text-center text-sm text-gray-500 italic">
-                Il grafico a barre mostra la media pratiche per singola risorsa (LM) in ogni team. L'obiettivo è livellare queste barre.
-            </div>
-        </div>
-
-        <div class="card border-t-4 border-green-500">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold text-gray-800">Dettaglio Assegnazioni</h2>
-                <button @click="exportToExcel" class="bg-green-700 text-white px-4 py-2 rounded btn">
-                    <i class="fas fa-download"></i> Scarica Excel
-                </button>
-            </div>
-
-            <div class="overflow-x-auto rounded-lg border">
-                <table class="min-w-full bg-white text-sm">
-                    <thead class="bg-gray-100 text-gray-700 uppercase">
-                        <tr>
-                            <th class="py-3 px-4 border-b text-left">Team Leader</th>
-                            <th class="py-3 px-4 border-b text-left">Portafoglio</th>
-                            <th class="py-3 px-4 border-b text-left">Cedente</th>
-                            <th class="py-3 px-4 border-b text-center">Tipo</th>
-                            <th class="py-3 px-4 border-b text-right">Pratiche Tot</th>
-                            <th class="py-3 px-4 border-b text-right bg-blue-50">Pratiche/LM</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="(row, idx) in result.assignments" :key="idx" class="hover:bg-gray-50 border-b last:border-0">
-                            <td class="py-2 px-4 font-semibold text-indigo-700">{{ row.team_leader }}</td>
-                            <td class="py-2 px-4">{{ row.portfolio_name }}</td>
-                            <td class="py-2 px-4">{{ row.cedant }}</td>
-                            <td class="py-2 px-4 text-center">
-                                <span v-if="row.is_new" class="bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-bold shadow-sm">NUOVO</span>
-                                <span v-else class="text-gray-400 text-xs">-</span>
-                            </td>
-                            <td class="py-2 px-4 text-right font-mono">{{ row.cases }}</td>
-                            <td class="py-2 px-4 text-right font-mono font-bold bg-blue-50 text-blue-800">{{ row.cases_per_lm }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="mt-6 p-4 bg-yellow-50 rounded border border-yellow-200">
-                <h3 class="font-bold text-yellow-800 mb-2"><i class="fas fa-lightbulb"></i> Logica dell'AI:</h3>
-                <p class="text-sm text-gray-800 whitespace-pre-line leading-relaxed">{{ result.reasoning }}</p>
-            </div>
-        </div>
-    </div>
-
 </div>
 
 <script>
@@ -168,207 +190,149 @@
     createApp({
         data() {
             return {
-                apiKey: localStorage.getItem('gemini_api_key') || '',
+                apiKey: localStorage.getItem('aequo_api_key') || '',
                 tempApiKey: '',
-                showApiKeyInput: !localStorage.getItem('gemini_api_key'),
-                loading: false,
-                // Dati di esempio
+                isProcessing: false,
+                statusMessage: '',
+                
+                // Dati
                 teams: [
-                    { leader: 'Rossi', managers: 4 },
-                    { leader: 'Bianchi', managers: 3 },
-                    { leader: 'Verdi', managers: 2 }
+                    { leader: 'Team Alpha', managerInput: 'Mario, Luigi, Giovanni', managers: ['Mario', 'Luigi', 'Giovanni'] },
+                    { leader: 'Team Beta', managerInput: 'Anna, Sofia', managers: ['Anna', 'Sofia'] }
                 ],
-                portfolios: [
-                    { name: 'Alpha 23', cedant: 'Banca A', total_cases: 800, is_new: false, status_string: '' },
-                    { name: 'Beta New', cedant: 'Banca B', total_cases: 450, is_new: true, status_string: '' },
-                    { name: 'Gamma 22', cedant: 'Banca A', total_cases: 300, is_new: false, status_string: '' },
-                    { name: 'Delta Legacy', cedant: 'Banca C', total_cases: 600, is_new: false, status_string: '' },
-                    { name: 'Epsilon', cedant: 'Banca B', total_cases: 200, is_new: true, status_string: '' }
-                ],
-                result: null,
-                charts: { workload: null, distribution: null }
+                rawRows: [], // Le 20k righe raw
+                portfolioStats: [], // Aggregato per AI
+                
+                // Risultati
+                assignedRows: [],
+                aiReasoning: '',
+                assignmentComplete: false,
+                chartInstance: null
             }
         },
         computed: {
-            hasApiKey() { return this.apiKey && this.apiKey.length > 10; },
-            totalLoanManagers() { return this.teams.reduce((acc, team) => acc + (parseInt(team.managers) || 0), 0); }
+            hasApiKey() { return this.apiKey && this.apiKey.length > 5; },
+            totalManagers() {
+                return this.teams.reduce((acc, t) => acc + (t.managers.length || 1), 0);
+            }
         },
         methods: {
             saveApiKey() {
-                if (this.hasApiKey) {
-                    localStorage.removeItem('gemini_api_key');
-                    this.apiKey = '';
-                    this.showApiKeyInput = true;
-                } else if(this.tempApiKey) {
-                    localStorage.setItem('gemini_api_key', this.tempApiKey);
+                if (this.tempApiKey) {
+                    localStorage.setItem('aequo_api_key', this.tempApiKey);
                     this.apiKey = this.tempApiKey;
-                    this.showApiKeyInput = false;
                     this.tempApiKey = '';
                 }
             },
-            addTeam() { this.teams.push({ leader: '', managers: 1 }); },
-            removeTeam(i) { this.teams.splice(i, 1); },
-            addPortfolio() { this.portfolios.push({ name: '', cedant: '', total_cases: 0, is_new: false, status_string: '' }); },
-            removePortfolio(i) { this.portfolios.splice(i, 1); },
-            
+            resetApiKey() {
+                localStorage.removeItem('aequo_api_key');
+                this.apiKey = '';
+            },
+            addTeam() {
+                this.teams.push({ leader: '', managerInput: '', managers: ['LM 1'] });
+            },
+            removeTeam(idx) {
+                this.teams.splice(idx, 1);
+            },
+            parseManagers(idx) {
+                const raw = this.teams[idx].managerInput;
+                if (!raw.trim()) {
+                    // Default se vuoto
+                    this.teams[idx].managers = ['LM 1'];
+                    return;
+                }
+                // Split per virgola o a capo
+                const names = raw.split(/,|\n/).map(n => n.trim()).filter(n => n.length > 0);
+                this.teams[idx].managers = names.length > 0 ? names : ['LM 1'];
+            },
+
             handleFileUpload(event) {
                 const file = event.target.files[0];
                 if (!file) return;
+                
+                this.statusMessage = 'Lettura File...';
+                this.isProcessing = true;
+
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-                    
-                    jsonData.forEach(row => {
-                        this.portfolios.push({
-                            name: row['Nome'] || row['Portafoglio'] || 'Ptf Importato',
-                            cedant: row['Cedente'] || 'ND',
-                            total_cases: Number(row['Pratiche'] || row['Numero'] || 0),
-                            is_new: !!(row['Nuovo']),
-                            status_string: row['Status'] || ''
-                        });
-                    });
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                        
+                        // Mapping colonne "intelligente"
+                        this.rawRows = jsonData.map(row => ({
+                            ptf: row['Portafoglio'] || row['Portfolio'] || 'Unknown',
+                            cedant: row['Cedente'] || row['Originator'] || 'Unknown',
+                            id: row['Id Pratica'] || row['Id'] || row['ID'] || 'N/A',
+                            name: row['Nome Pratica'] || row['Name'] || '',
+                            status: row['Status'] || row['Stato'] || 'Active'
+                        }));
+
+                        // Crea statistiche aggregate per l'AI
+                        this.calculateStats();
+                        this.isProcessing = false;
+
+                    } catch (err) {
+                        alert("Errore lettura file: " + err.message);
+                        this.isProcessing = false;
+                    }
                 };
                 reader.readAsArrayBuffer(file);
             },
 
-            async calculateAssignment() {
-                this.loading = true;
-                this.result = null;
+            calculateStats() {
+                // Raggruppa per Portafoglio + Cedente
+                const stats = {};
+                this.rawRows.forEach(r => {
+                    const key = r.ptf + "||" + r.cedant;
+                    if (!stats[key]) {
+                        stats[key] = { name: r.ptf, cedant: r.cedant, count: 0, statusMix: {} };
+                    }
+                    stats[key].count++;
+                    if (!stats[key].statusMix[r.status]) stats[key].statusMix[r.status] = 0;
+                    stats[key].statusMix[r.status]++;
+                });
+                this.portfolioStats = Object.values(stats);
+            },
 
-                const promptData = { teams: this.teams, portfolios: this.portfolios };
-                
-                // Prompt ottimizzato
-                const systemPrompt = `
-                    Agisci come un algoritmo di allocazione portafogli.
-                    INPUT: ${JSON.stringify(promptData)}
+            async calculateAssignment() {
+                this.isProcessing = true;
+                this.statusMessage = 'Consultazione AI...';
+
+                // 1. Prepara payload per Gemini (SOLO aggregati, non raw rows)
+                const teamInfo = this.teams.map(t => ({
+                    leader: t.leader,
+                    lm_names: t.managers,
+                    lm_count: t.managers.length
+                }));
+
+                const prompt = `
+                    Sei un gestore di portafogli NPL.
+                    Ho ${this.rawRows.length} pratiche totali divise in questi portafogli:
+                    ${JSON.stringify(this.portfolioStats)}
+
+                    Devo assegnarle a questi Team:
+                    ${JSON.stringify(teamInfo)}
+
+                    OBIETTIVO:
+                    1. Assegna ciascun Portafoglio a un Team specifico.
+                    2. Cerca di mantenere le cedenti raggruppate nello stesso team.
+                    3. BILANCIAMENTO: Il carico totale (Somma pratiche / Numero LM del team) deve essere il più possibile uguale tra i team.
+                    4. Se un portafoglio è ENORME e sbilancia tutto, puoi suggerire di assegnarlo a un team che ha più LM, oppure (solo se strettamente necessario) non dividerlo. Per ora assegna Portafogli interi ai Team.
                     
-                    VINCOLI:
-                    1. Assegna TUTTI i portafogli ai Team Leader.
-                    2. Raggruppa i portafogli per CEDENTE: stessa cedente = stesso Team (ove possibile).
-                    3. EQUITÀ CARICO: (Totale Pratiche Team / N. Loan Manager del Team) deve essere simile tra i team.
-                    4. DISTRIBUZIONE NUOVI: Assegna portafogli 'is_new' a team diversi se possibile.
-                    
-                    OUTPUT JSON (NO Markdown):
+                    OUTPUT JSON (no markdown):
                     {
                         "assignments": [
-                            { "team_leader": "Nome", "portfolio_name": "Nome", "cedant": "Nome", "is_new": true/false, "cases": 123, "cases_per_lm": 123 }
+                            { "portfolio_name": "Nome Ptf", "assign_to_team_leader": "Nome Leader" }
                         ],
-                        "reasoning": "Spiegazione sintetica"
+                        "reasoning": "Spiegazione logica in italiano."
                     }
                 `;
 
                 try {
+                    // 2. Chiamata API
                     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.apiKey}`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt }] }] })
-                    });
-
-                    const data = await response.json();
-                    if (data.error) throw new Error(data.error.message);
-
-                    let rawText = data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim();
-                    this.result = JSON.parse(rawText);
-
-                    // Genera i grafici dopo che il DOM si è aggiornato
-                    this.$nextTick(() => {
-                        this.renderCharts();
-                    });
-
-                } catch (error) {
-                    alert("Errore AI: " + error.message);
-                } finally {
-                    this.loading = false;
-                }
-            },
-
-            renderCharts() {
-                if (!this.result) return;
-
-                // 1. Aggregazione Dati per Team
-                const teamStats = {};
-                
-                // Inizializza stats basandosi sui team originali per assicurarsi che appaiano tutti
-                this.teams.forEach(t => {
-                    teamStats[t.leader] = { total_cases: 0, managers: parseInt(t.managers) || 1, load_per_lm: 0 };
-                });
-
-                // Somma le pratiche assegnate
-                this.result.assignments.forEach(a => {
-                    // Normalizzazione nome (in caso l'AI faccia piccoli typo)
-                    const key = Object.keys(teamStats).find(k => k.toLowerCase() === a.team_leader.toLowerCase()) || a.team_leader;
-                    if (!teamStats[key]) teamStats[key] = { total_cases: 0, managers: 1 }; // Fallback
-                    teamStats[key].total_cases += a.cases;
-                });
-
-                // Calcolo metriche finali
-                const labels = Object.keys(teamStats);
-                const workloadData = labels.map(l => Math.round(teamStats[l].total_cases / teamStats[l].managers));
-                const totalData = labels.map(l => teamStats[l].total_cases);
-
-                // Configurazione Colori
-                const colors = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
-
-                // --- Grafico 1: Carico per LM (Barre) ---
-                if (this.charts.workload) this.charts.workload.destroy();
-                const ctxWorkload = document.getElementById('chartWorkload').getContext('2d');
-                this.charts.workload = new Chart(ctxWorkload, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Pratiche medie per Loan Manager',
-                            data: workloadData,
-                            backgroundColor: 'rgba(79, 70, 229, 0.7)',
-                            borderColor: '#4f46e5',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: { y: { beginAtZero: true, title: { display: true, text: 'N. Pratiche / LM' } } }
-                    }
-                });
-
-                // --- Grafico 2: Distribuzione Totale (Ciambella) ---
-                if (this.charts.distribution) this.charts.distribution.destroy();
-                const ctxDist = document.getElementById('chartDistribution').getContext('2d');
-                this.charts.distribution = new Chart(ctxDist, {
-                    type: 'doughnut',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            data: totalData,
-                            backgroundColor: colors,
-                            hoverOffset: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { 
-                            legend: { position: 'bottom' },
-                            title: { display: true, text: 'Pratiche Totali per Team' } 
-                        }
-                    }
-                });
-            },
-
-            exportToExcel() {
-                if (!this.result) return;
-                const ws = XLSX.utils.json_to_sheet(this.result.assignments);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Assegnazioni");
-                XLSX.writeFile(wb, "Report_Assegnazione_NPL.xlsx");
-            }
-        }
-    }).mount('#app');
-</script>
-
-</body>
-</html>
+                        headers: {
