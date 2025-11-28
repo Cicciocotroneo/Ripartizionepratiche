@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aequo - Smart Allocator</title>
+    <title>Aequo - Smart Allocator v3.1</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -12,7 +12,9 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <style>
+        /* Nasconde le variabili {{ }} prima del caricamento */
         [v-cloak] { display: none !important; }
+        
         body { font-family: 'Segoe UI', sans-serif; background-color: #f8fafc; }
         .card { background: white; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 24px; margin-bottom: 24px; }
         .loader { border: 3px solid #e2e8f0; border-top: 3px solid #6366f1; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; }
@@ -21,8 +23,8 @@
         .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 4px; }
         
-        .tab-btn { padding: 10px 20px; font-weight: bold; border-bottom: 3px solid transparent; color: #64748b; transition: all 0.2s; }
-        .tab-btn.active { color: #4f46e5; border-bottom-color: #4f46e5; }
+        .tab-btn { padding: 10px 20px; font-weight: bold; border-bottom: 3px solid transparent; color: #64748b; transition: all 0.2s; cursor: pointer; }
+        .tab-btn.active { color: #4f46e5; border-bottom-color: #4f46e5; background-color: #f8fafc; }
         .tab-btn:hover:not(.active) { color: #334155; border-bottom-color: #cbd5e1; }
     </style>
 </head>
@@ -33,7 +35,7 @@
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-100">
         <div>
             <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                <i class="fas fa-balance-scale text-indigo-600"></i> Aequo <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">v3.0 Auto-Model</span>
+                <i class="fas fa-balance-scale text-indigo-600"></i> Aequo <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">v3.1 Balanced</span>
             </h1>
         </div>
         
@@ -144,7 +146,7 @@
                 </span>
             </button>
 
-            <div v-if="!selectedModel && hasApiKey" class="text-center text-red-500 text-xs">
+            <div v-if="!selectedModel && hasApiKey" class="text-center text-red-500 text-xs mt-2">
                 Nessun modello disponibile trovato. Verifica la API Key.
             </div>
 
@@ -158,7 +160,7 @@
                     <canvas id="resultChart"></canvas>
                 </div>
                 <p class="text-xs text-center text-gray-400 mt-2">
-                    {{ mode === 'macro' ? 'Media pratiche per Manager (Calcolo matematico)' : 'Pratiche effettive assegnate per Manager (Conta reale)' }}
+                    {{ mode === 'macro' ? 'Media pratiche per Manager (Target vs Reale)' : 'Pratiche effettive assegnate per Manager' }}
                 </p>
             </div>
 
@@ -170,8 +172,9 @@
                     </button>
                 </div>
 
-                <div class="bg-white p-3 rounded border border-green-200 mb-4 text-sm text-gray-700">
-                    <strong class="text-purple-600">Strategia AI ({{ selectedModelShort }}):</strong> {{ aiReasoning }}
+                <div class="bg-white p-3 rounded border border-green-200 mb-4 text-sm text-gray-700 whitespace-pre-line">
+                    <strong class="text-purple-600">Strategia AI ({{ selectedModelShort }}):</strong> 
+                    {{ aiReasoning }}
                 </div>
 
                 <div v-if="mode === 'macro'" class="overflow-x-auto border rounded bg-white">
@@ -220,7 +223,7 @@
                             </tr>
                         </tbody>
                     </table>
-                    <div class="p-2 text-center text-xs text-gray-400">Prime 50 righe mostrate.</div>
+                    <div class="p-2 text-center text-xs text-gray-400">Prime 50 righe mostrate (scarica Excel per tutto).</div>
                 </div>
 
             </div>
@@ -242,23 +245,27 @@
                     
                     // Modelli
                     availableModels: [],
-                    selectedModel: '', // Es. "models/gemini-1.5-flash"
+                    selectedModel: '', 
 
-                    // Teams
+                    // Teams (Dati Esempio)
                     teams: [
                         { leader: 'Team Alpha', managerInput: 'Mario, Luigi', managers: ['Mario', 'Luigi'] },
                         { leader: 'Team Beta', managerInput: 'Anna, Sofia, Marco', managers: ['Anna', 'Sofia', 'Marco'] }
                     ],
                     
-                    // Dati
+                    // Dati Macro
                     manualPortfolios: [
                         { name: 'Ptf 2024-A', cedant: 'Bank X', cases: 1500, is_new: true },
                         { name: 'Ptf Legacy', cedant: 'Bank Y', cases: 800, is_new: false }
                     ],
                     macroResults: [],
+                    
+                    // Dati Detail
                     rawRows: [],
                     portfolioStats: [],
                     assignedRows: [],
+                    
+                    // Risultati
                     aiReasoning: '',
                     chartInstance: null
                 }
@@ -287,7 +294,6 @@
                 }
             },
             mounted() {
-                // Se c'è già una key salvata, cerca i modelli all'avvio
                 if (this.hasApiKey) {
                     this.fetchModels();
                 }
@@ -308,39 +314,30 @@
                     this.selectedModel = '';
                 },
 
-                // ----------------------------------------
-                // NUOVA FUNZIONE: RECUPERO AUTOMATICO MODELLI
-                // ----------------------------------------
+                // Recupero Modelli
                 async fetchModels() {
                     try {
                         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`);
-                        if (!response.ok) throw new Error("Key non valida o errore connessione");
-                        
+                        if (!response.ok) throw new Error("Errore API Key");
                         const data = await response.json();
                         
-                        // Filtra solo i modelli Gemini che generano contenuto
+                        // Filtra modelli 'generateContent'
                         const geminiModels = data.models.filter(m => 
                             m.name.includes('gemini') && 
                             m.supportedGenerationMethods.includes('generateContent')
                         );
 
-                        // Formatta per la select
                         this.availableModels = geminiModels.map(m => ({
                             name: m.name,
                             displayName: m.displayName || m.name.split('/').pop()
                         }));
 
-                        // LOGICA DI SELEZIONE AUTOMATICA INTELLIGENTE
-                        // 1. Cerca "flash" (veloce/economico)
+                        // Auto-select Flash
                         let bestMatch = this.availableModels.find(m => m.name.includes('1.5-flash'));
-                        // 2. Se non c'è, cerca "pro"
                         if (!bestMatch) bestMatch = this.availableModels.find(m => m.name.includes('1.5-pro'));
-                        // 3. Altrimenti il primo della lista
                         if (!bestMatch && this.availableModels.length > 0) bestMatch = this.availableModels[0];
 
-                        if (bestMatch) {
-                            this.selectedModel = bestMatch.name;
-                        }
+                        if (bestMatch) this.selectedModel = bestMatch.name;
 
                     } catch (e) {
                         alert("Impossibile recuperare i modelli: " + e.message);
@@ -348,7 +345,7 @@
                     }
                 },
                 
-                // Teams
+                // Teams Utils
                 addTeam() { this.teams.push({ leader: '', managerInput: '', managers: ['LM 1'] }); },
                 removeTeam(idx) { this.teams.splice(idx, 1); },
                 parseManagers(idx) {
@@ -357,11 +354,11 @@
                     this.teams[idx].managers = raw.split(/,|\n/).map(n => n.trim()).filter(n => n.length > 0);
                 },
 
-                // Macro Data
+                // Macro Utils
                 addManualPortfolio() { this.manualPortfolios.push({ name: '', cedant: '', cases: 0, is_new: false }); },
                 removeManualPortfolio(idx) { this.manualPortfolios.splice(idx, 1); },
 
-                // Detail Data
+                // Detail Utils
                 handleFileUpload(event) {
                     const file = event.target.files[0];
                     if (!file) return;
@@ -386,16 +383,18 @@
                             });
                             this.portfolioStats = Object.values(stats);
                             this.isProcessing = false;
-                        } catch(e) { alert("Err Excel: "+e); this.isProcessing = false; }
+                        } catch(e) { alert("Errore Excel: " + e.message); this.isProcessing = false; }
                     };
                     reader.readAsArrayBuffer(file);
                 },
 
+                // --- LOGICA CORE AGGIORNATA ---
                 async calculateAssignment() {
                     this.isProcessing = true;
                     this.macroResults = [];
                     this.assignedRows = [];
                     
+                    // 1. Preparazione
                     const teamsPayload = this.teams.map(t => ({ leader: t.leader, lm_count: t.managers.length }));
                     
                     let portfoliosPayload = [];
@@ -407,30 +406,42 @@
                         portfoliosPayload = this.portfolioStats;
                     }
 
+                    // 2. CALCOLO MATEMATICO RIGIDO
+                    const totalCases = portfoliosPayload.reduce((sum, p) => sum + p.count, 0);
+                    const totalLMs = teamsPayload.reduce((sum, t) => sum + t.lm_count, 0);
+                    const idealTarget = Math.round(totalCases / totalLMs);
+
                     const prompt = `
-                        Agisci come algoritmo di allocazione NPL.
-                        MODE: ${this.mode === 'macro' ? 'MACRO' : 'DETAIL'}.
-                        TEAMS: ${JSON.stringify(teamsPayload)}
-                        PORTFOLIOS: ${JSON.stringify(portfoliosPayload)}
+                        Agisci come un esperto algoritmo di ottimizzazione logistica.
+                        
+                        DATI INPUT:
+                        - Totale Pratiche Globali: ${totalCases}
+                        - Totale Loan Managers (LM): ${totalLMs}
+                        - TEAMS DISPONIBILI: ${JSON.stringify(teamsPayload)}
+                        - PORTAFOGLI DA ASSEGNARE: ${JSON.stringify(portfoliosPayload)}
 
-                        OBIETTIVO:
-                        1. Assegna ogni portafoglio a un Team Leader.
-                        2. Raggruppa per Cedente.
-                        3. Equità: (Totale Pratiche / Numero LM del team) deve essere simile.
-                        4. ${this.mode === 'macro' ? 'Se is_new=true, distribuisci tra team diversi.' : ''}
+                        OBIETTIVO MATEMATICO (PRIORITÀ MASSIMA):
+                        Il "Target Ideale" è di circa ${idealTarget} pratiche per ogni singolo Loan Manager.
+                        
+                        REGOLE VINCOLANTI:
+                        1. **EQUILIBRIO CARICO:** La media pratiche/LM di OGNI team DEVE essere il più possibile vicina a ${idealTarget}.
+                           - NON creare squilibri enormi (es. un team con 800/LM e uno con 160/LM è VIETATO).
+                        2. **DISTRIBUZIONE NUOVI:** Distribuisci i portafogli "is_new" tra i team, se possibile.
+                        3. **RAGGRUPPAMENTO CEDENTI:** Assegna portafogli della stessa Cedente allo stesso team SOLO SE questo non distrugge l'equilibrio matematico (Regola 1).
+                           - Se necessario per l'equilibrio, SPEZZA le cedenti assegnando i loro diversi portafogli a team diversi.
 
-                        OUTPUT JSON:
+                        OUTPUT JSON (senza markdown):
                         {
                             "assignments": [
-                                { "portfolio_name": "Nome", "cedant": "Nome", "team_leader": "Nome Leader Assegnato", "cases": 123, "is_new": true/false }
+                                { "portfolio_name": "NomeEsattoPtf", "cedant": "Nome", "team_leader": "NomeLeader", "cases": 123, "is_new": true/false }
                             ],
-                            "reasoning": "Spiegazione breve"
+                            "reasoning": "Spiegazione di come hai rispettato il target di ${idealTarget} pratiche/LM."
                         }
                     `;
 
                     try {
-                        // USA IL MODELLO SELEZIONATO DINAMICAMENTE
-                        const url = `https://generativelanguage.googleapis.com/v1beta/${this.selectedModel}:generateContent?key=${this.apiKey}`;
+                        const modelToUse = this.selectedModel || 'gemini-1.5-flash';
+                        const url = `https://generativelanguage.googleapis.com/v1beta/${modelToUse}:generateContent?key=${this.apiKey}`;
                         
                         const response = await fetch(url, {
                             method: 'POST',
@@ -440,7 +451,10 @@
                         const data = await response.json();
                         if (data.error) throw new Error(data.error.message);
                         
-                        const aiRes = JSON.parse(data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim());
+                        const rawText = data.candidates[0].content.parts[0].text;
+                        const jsonText = rawText.replace(/```json|```/g, '').trim();
+                        const aiRes = JSON.parse(jsonText);
+                        
                         this.aiReasoning = aiRes.reasoning;
 
                         if (this.mode === 'macro') {
@@ -452,6 +466,7 @@
                         this.$nextTick(() => this.renderChart());
                         
                     } catch (e) {
+                        console.error(e);
                         alert("Errore AI: " + e.message);
                     } finally {
                         this.isProcessing = false;
@@ -514,7 +529,7 @@
                         data: {
                             labels: labels,
                             datasets: [{
-                                label: 'Media Pratiche per Loan Manager',
+                                label: 'Pratiche medie per Loan Manager',
                                 data: dataValues,
                                 backgroundColor: '#4f46e5',
                                 borderRadius: 5
