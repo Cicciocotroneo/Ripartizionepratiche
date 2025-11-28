@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aequo - NPL Allocator (Detail Mode)</title>
+    <title>Aequo - NPL Allocator</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
@@ -11,6 +12,9 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <style>
+        /* FIX FONDAMENTALE: Nasconde le graffe {{ }} finché Vue non è pronto */
+        [v-cloak] { display: none !important; }
+        
         body { font-family: 'Segoe UI', sans-serif; background-color: #f8fafc; }
         .card { background: white; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 24px; margin-bottom: 24px; }
         .loader { border: 4px solid #e2e8f0; border-top: 4px solid #6366f1; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; display: inline-block; }
@@ -22,7 +26,7 @@
 </head>
 <body>
 
-<div id="app" class="container mx-auto p-4 max-w-7xl">
+<div id="app" v-cloak class="container mx-auto p-4 max-w-7xl">
 
     <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <div>
@@ -173,166 +177,3 @@
                                 <td class="px-4 py-2 text-gray-600 bg-blue-50">{{ row.team }}</td>
                             </tr>
                         </tbody>
-                    </table>
-                    <div class="p-2 text-center text-xs text-gray-400 bg-gray-50 border-t">
-                        Mostrate prime 50 di {{ assignedRows.length }} righe. Scarica Excel per il dettaglio completo.
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</div>
-
-<script>
-    const { createApp } = Vue;
-
-    createApp({
-        data() {
-            return {
-                apiKey: localStorage.getItem('aequo_api_key') || '',
-                tempApiKey: '',
-                isProcessing: false,
-                statusMessage: '',
-                
-                // Dati
-                teams: [
-                    { leader: 'Team Alpha', managerInput: 'Mario, Luigi, Giovanni', managers: ['Mario', 'Luigi', 'Giovanni'] },
-                    { leader: 'Team Beta', managerInput: 'Anna, Sofia', managers: ['Anna', 'Sofia'] }
-                ],
-                rawRows: [], // Le 20k righe raw
-                portfolioStats: [], // Aggregato per AI
-                
-                // Risultati
-                assignedRows: [],
-                aiReasoning: '',
-                assignmentComplete: false,
-                chartInstance: null
-            }
-        },
-        computed: {
-            hasApiKey() { return this.apiKey && this.apiKey.length > 5; },
-            totalManagers() {
-                return this.teams.reduce((acc, t) => acc + (t.managers.length || 1), 0);
-            }
-        },
-        methods: {
-            saveApiKey() {
-                if (this.tempApiKey) {
-                    localStorage.setItem('aequo_api_key', this.tempApiKey);
-                    this.apiKey = this.tempApiKey;
-                    this.tempApiKey = '';
-                }
-            },
-            resetApiKey() {
-                localStorage.removeItem('aequo_api_key');
-                this.apiKey = '';
-            },
-            addTeam() {
-                this.teams.push({ leader: '', managerInput: '', managers: ['LM 1'] });
-            },
-            removeTeam(idx) {
-                this.teams.splice(idx, 1);
-            },
-            parseManagers(idx) {
-                const raw = this.teams[idx].managerInput;
-                if (!raw.trim()) {
-                    // Default se vuoto
-                    this.teams[idx].managers = ['LM 1'];
-                    return;
-                }
-                // Split per virgola o a capo
-                const names = raw.split(/,|\n/).map(n => n.trim()).filter(n => n.length > 0);
-                this.teams[idx].managers = names.length > 0 ? names : ['LM 1'];
-            },
-
-            handleFileUpload(event) {
-                const file = event.target.files[0];
-                if (!file) return;
-                
-                this.statusMessage = 'Lettura File...';
-                this.isProcessing = true;
-
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
-                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-                        
-                        // Mapping colonne "intelligente"
-                        this.rawRows = jsonData.map(row => ({
-                            ptf: row['Portafoglio'] || row['Portfolio'] || 'Unknown',
-                            cedant: row['Cedente'] || row['Originator'] || 'Unknown',
-                            id: row['Id Pratica'] || row['Id'] || row['ID'] || 'N/A',
-                            name: row['Nome Pratica'] || row['Name'] || '',
-                            status: row['Status'] || row['Stato'] || 'Active'
-                        }));
-
-                        // Crea statistiche aggregate per l'AI
-                        this.calculateStats();
-                        this.isProcessing = false;
-
-                    } catch (err) {
-                        alert("Errore lettura file: " + err.message);
-                        this.isProcessing = false;
-                    }
-                };
-                reader.readAsArrayBuffer(file);
-            },
-
-            calculateStats() {
-                // Raggruppa per Portafoglio + Cedente
-                const stats = {};
-                this.rawRows.forEach(r => {
-                    const key = r.ptf + "||" + r.cedant;
-                    if (!stats[key]) {
-                        stats[key] = { name: r.ptf, cedant: r.cedant, count: 0, statusMix: {} };
-                    }
-                    stats[key].count++;
-                    if (!stats[key].statusMix[r.status]) stats[key].statusMix[r.status] = 0;
-                    stats[key].statusMix[r.status]++;
-                });
-                this.portfolioStats = Object.values(stats);
-            },
-
-            async calculateAssignment() {
-                this.isProcessing = true;
-                this.statusMessage = 'Consultazione AI...';
-
-                // 1. Prepara payload per Gemini (SOLO aggregati, non raw rows)
-                const teamInfo = this.teams.map(t => ({
-                    leader: t.leader,
-                    lm_names: t.managers,
-                    lm_count: t.managers.length
-                }));
-
-                const prompt = `
-                    Sei un gestore di portafogli NPL.
-                    Ho ${this.rawRows.length} pratiche totali divise in questi portafogli:
-                    ${JSON.stringify(this.portfolioStats)}
-
-                    Devo assegnarle a questi Team:
-                    ${JSON.stringify(teamInfo)}
-
-                    OBIETTIVO:
-                    1. Assegna ciascun Portafoglio a un Team specifico.
-                    2. Cerca di mantenere le cedenti raggruppate nello stesso team.
-                    3. BILANCIAMENTO: Il carico totale (Somma pratiche / Numero LM del team) deve essere il più possibile uguale tra i team.
-                    4. Se un portafoglio è ENORME e sbilancia tutto, puoi suggerire di assegnarlo a un team che ha più LM, oppure (solo se strettamente necessario) non dividerlo. Per ora assegna Portafogli interi ai Team.
-                    
-                    OUTPUT JSON (no markdown):
-                    {
-                        "assignments": [
-                            { "portfolio_name": "Nome Ptf", "assign_to_team_leader": "Nome Leader" }
-                        ],
-                        "reasoning": "Spiegazione logica in italiano."
-                    }
-                `;
-
-                try {
-                    // 2. Chiamata API
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.apiKey}`, {
-                        method: 'POST',
-                        headers: {
