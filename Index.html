@@ -3,33 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADR - Smart Allocator v9.0</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-    <meta name="theme-color" content="#4f46e5">
-
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="ADR">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2620/2620603.png">
-
-    <meta name="mobile-web-app-capable" content="yes">
-    <link rel="icon" type="image/png" sizes="192x192" href="https://cdn-icons-png.flaticon.com/512/2620/2620603.png">
-
-    <link rel="manifest" href='data:application/manifest+json,{
-        "name": "ADR Smart Allocator",
-        "short_name": "ADR",
-        "start_url": ".",
-        "display": "standalone",
-        "background_color": "#f8fafc",
-        "theme_color": "#4f46e5",
-        "orientation": "portrait",
-        "icons": [{
-            "src": "https://cdn-icons-png.flaticon.com/512/2620/2620603.png",
-            "sizes": "512x512",
-            "type": "image/png"
-        }]
-    }'>
+    <title>ADR - Assegnazione Dinamica Risorse v8.1</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -54,6 +28,15 @@
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 50; display: flex; justify-content: center; align-items: center; }
         .modal-content { background: white; border-radius: 12px; width: 90%; max-width: 900px; max-height: 90vh; overflow-y: auto; padding: 0; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
     </style>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ADR">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2620/2620603.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="icon" type="image/png" sizes="192x192" href="https://cdn-icons-png.flaticon.com/512/2620/2620603.png">
 </head>
 <body>
 
@@ -65,36 +48,30 @@
                 <h2 class="text-xl font-bold"><i class="fas fa-users-cog"></i> Configurazione Organigramma</h2>
                 <button @click="showConfigModal = false" class="text-white hover:text-gray-200"><i class="fas fa-times text-xl"></i></button>
             </div>
-            
             <div class="p-6">
-                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
-                    <p class="text-blue-700 font-bold">Team rilevati dal file.</p>
-                    <p class="text-sm text-blue-600">Conferma o modifica la struttura prima del calcolo.</p>
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 text-sm text-blue-700">
+                    Conferma i Team e i Manager rilevati dal file prima di procedere.
                 </div>
-
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div v-for="(team, idx) in teams" :key="idx" class="bg-gray-50 p-4 rounded-lg border border-gray-300 shadow-sm relative group">
                         <button @click="removeTeam(idx)" class="absolute top-2 right-2 text-gray-300 hover:text-red-500"><i class="fas fa-trash"></i></button>
                         <div class="mb-2">
-                            <label class="text-xs font-bold text-gray-500 uppercase">Team Leader</label>
+                            <label class="text-xs font-bold text-gray-500 uppercase">Nome Team</label>
                             <input type="text" v-model="team.leader" class="w-full font-bold bg-white border border-gray-300 rounded p-1.5 text-sm">
                         </div>
                         <div>
-                            <label class="text-xs font-bold text-gray-500 uppercase">Managers</label>
+                            <label class="text-xs font-bold text-gray-500 uppercase">Membri</label>
                             <textarea v-model="team.managerInput" @blur="parseManagers(idx)" class="w-full bg-white border border-gray-300 rounded p-2 text-xs h-24 resize-none" placeholder="LM1, LM2..."></textarea>
                         </div>
-                        <div class="text-right text-xs text-indigo-600 mt-1 font-bold">{{ team.managers.length }} LM</div>
                     </div>
-                    <div @click="addTeam" class="border-2 border-dashed border-gray-300 rounded-lg flex flex-col justify-center items-center cursor-pointer hover:bg-gray-50 hover:border-indigo-300 transition h-48">
-                        <i class="fas fa-plus-circle text-3xl text-gray-300 mb-2"></i>
-                        <span class="text-gray-500 font-medium">Aggiungi Team</span>
+                    <div @click="addTeam" class="border-2 border-dashed border-gray-300 rounded-lg flex flex-col justify-center items-center cursor-pointer hover:bg-gray-50 h-48">
+                        <i class="fas fa-plus-circle text-3xl text-gray-300 mb-2"></i><span class="text-gray-500 font-medium">Aggiungi Team</span>
                     </div>
                 </div>
             </div>
-
             <div class="bg-gray-50 p-4 border-t flex justify-end gap-3 sticky bottom-0">
                 <button @click="showConfigModal = false" class="px-4 py-2 text-gray-600 font-medium">Annulla</button>
-                <button @click="confirmConfig" class="px-6 py-2 bg-indigo-600 text-white rounded font-bold hover:bg-indigo-700 shadow">Conferma <i class="fas fa-arrow-right ml-2"></i></button>
+                <button @click="confirmConfig" class="px-6 py-2 bg-indigo-600 text-white rounded font-bold shadow hover:scale-105 transition">Conferma <i class="fas fa-arrow-right ml-2"></i></button>
             </div>
         </div>
     </div>
@@ -102,8 +79,9 @@
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-100">
         <div>
             <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                <i class="fas fa-balance-scale text-indigo-600"></i> ADR - Asset Distribution Ruler <span class="text-xs bg-teal-100 text-teal-800 px-2 py-1 rounded">v9.0 Interactive</span>
+                <i class="fas fa-balance-scale text-indigo-600"></i> ADR <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">v8.1</span>
             </h1>
+            <p class="text-xs text-gray-400 mt-1">Assegnazione Dinamica Risorse</p>
         </div>
         <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto items-center">
             <div v-if="hasApiKey && availableModels.length > 0" class="flex items-center gap-2 text-sm bg-gray-50 p-1 rounded border">
@@ -126,7 +104,7 @@
             <div class="flex border-b border-gray-200 mb-4 bg-white rounded-t-lg px-2 pt-2 overflow-x-auto">
                 <button @click="mode = 'macro'" class="tab-btn" :class="{ 'active': mode === 'macro' }"><i class="fas fa-cubes"></i> Macro</button>
                 <button @click="mode = 'detail'" class="tab-btn" :class="{ 'active': mode === 'detail' }"><i class="fas fa-list"></i> Dettaglio</button>
-                <button @click="mode = 'rebalance'" class="tab-btn" :class="{ 'active': mode === 'rebalance' }"><i class="fas fa-sync-alt"></i> Ribilancia</button>
+                <button @click="mode = 'rebalance'" class="tab-btn" :class="{ 'active': mode === 'rebalance' }"><i class="fas fa-sync-alt"></i> Ribilanciamento</button>
             </div>
 
             <div v-if="mode === 'macro'" class="card border-l-4 border-orange-500 animate-fade-in">
@@ -135,542 +113,3 @@
                     <div class="flex gap-2">
                         <label class="cursor-pointer bg-green-50 text-green-700 hover:bg-green-100 px-3 py-1 rounded text-sm font-bold border border-green-200 transition flex items-center gap-1">
                             <i class="fas fa-file-excel"></i> Importa
-                            <input type="file" @change="handleMacroUpload" class="hidden" accept=".xlsx, .csv">
-                        </label>
-                        <button @click="addManualPortfolio" class="text-orange-600 font-bold text-sm bg-orange-50 px-3 py-1 rounded border border-orange-200 hover:bg-orange-100"><i class="fas fa-plus"></i> Manuale</button>
-                    </div>
-                </div>
-                <div class="space-y-3 max-h-[300px] overflow-y-auto custom-scroll pr-2">
-                    <div v-for="(ptf, idx) in manualPortfolios" :key="idx" class="bg-gray-50 p-3 rounded border relative">
-                        <button @click="removeManualPortfolio(idx)" class="absolute top-2 right-2 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
-                        <div class="grid grid-cols-2 gap-2 mb-2">
-                            <input type="text" v-model="ptf.name" placeholder="Nome Ptf" class="border p-1 rounded text-sm w-full font-semibold">
-                            <input type="text" v-model="ptf.cedant" placeholder="Cedente" class="border p-1 rounded text-sm w-full">
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 items-center">
-                            <input type="number" v-model="ptf.cases" placeholder="# NDG" class="border p-1 rounded text-sm w-full">
-                            <label class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer">
-                                <input type="checkbox" v-model="ptf.is_new" class="form-checkbox text-orange-500 rounded"> <span>Nuovo?</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div v-if="mode === 'detail'" class="card border-l-4 border-blue-500 animate-fade-in">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-bold text-gray-700">Import Dettaglio</h2>
-                    <span v-if="rawRows.length > 0" class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">{{ rawRows.length.toLocaleString() }} Righe</span>
-                </div>
-                <label class="cursor-pointer bg-blue-50 text-blue-700 hover:bg-blue-100 px-4 py-6 w-full border-2 border-dashed border-blue-200 rounded-lg text-center transition flex flex-col items-center">
-                    <i class="fas fa-cloud-upload-alt text-2xl mb-2"></i>
-                    <span class="text-sm font-medium">Carica Excel (Pratiche)</span>
-                    <input type="file" @change="handleDetailUpload" class="hidden" accept=".xlsx, .csv">
-                </label>
-            </div>
-
-            <div v-if="mode === 'rebalance'" class="card border-l-4 border-pink-500 animate-fade-in">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-bold text-gray-700">Ribilanciamento</h2>
-                    <span v-if="rawRows.length > 0" class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">{{ rawRows.length.toLocaleString() }} Righe</span>
-                </div>
-                <label class="cursor-pointer bg-pink-50 text-pink-700 hover:bg-pink-100 px-4 py-6 w-full border-2 border-dashed border-pink-200 rounded-lg text-center transition flex flex-col items-center">
-                    <i class="fas fa-sync-alt text-2xl mb-2"></i>
-                    <span class="text-sm font-medium">Carica Excel Completo</span>
-                    <input type="file" @change="handleRebalanceUpload" class="hidden" accept=".xlsx, .csv">
-                </label>
-                <div class="mt-3 p-3 bg-pink-50 border border-pink-100 rounded text-xs text-pink-800">
-                    <p class="font-bold mb-1">Nota:</p> Dopo il caricamento, si aprirà un pannello per verificare i Team.
-                </div>
-            </div>
-
-            <div class="card border-l-4 border-indigo-500">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-bold text-gray-700">Organigramma</h2>
-                    <button @click="showConfigModal = true" class="text-indigo-600 font-bold text-sm"><i class="fas fa-edit"></i> Modifica</button>
-                </div>
-                <div class="space-y-4 max-h-[300px] overflow-y-auto custom-scroll pr-2">
-                    <div v-for="(team, idx) in teams" :key="idx" class="bg-gray-50 p-3 rounded border border-gray-200 relative">
-                        <div class="mb-1 font-bold text-gray-800">{{ team.leader }}</div>
-                        <div class="text-xs text-gray-500 truncate" :title="team.managers.join(', ')">{{ team.managers.length > 0 ? team.managers.join(', ') : 'Nessun LM' }}</div>
-                        <div class="text-right text-xs text-indigo-600 mt-1 font-bold">{{ team.managers.length }} LM</div>
-                    </div>
-                </div>
-            </div>
-
-            <button @click="calculateAssignment" :disabled="isProcessing || !hasApiKey || (!canProceed) || !selectedModel" 
-                class="w-full bg-gradient-to-r from-slate-800 to-black text-white py-4 rounded-lg text-xl font-bold shadow-lg hover:shadow-xl transition disabled:opacity-50 flex items-center justify-center gap-3">
-                <span v-if="!isProcessing"><i class="fas" :class="mode === 'rebalance' ? 'fa-sync-alt' : 'fa-brain'"></i> {{ mode === 'rebalance' ? 'Ribilancia' : 'Calcola' }}</span>
-                <span v-else class="flex items-center gap-2"><span class="loader border-white border-t-transparent"></span> Elaborazione...</span>
-            </button>
-            <div v-if="!selectedModel && hasApiKey" class="text-center text-red-500 text-xs mt-2">Nessun modello trovato.</div>
-        </div>
-
-        <div class="lg:col-span-7 space-y-6">
-            
-            <div v-if="hasResults" class="card">
-                <h3 class="text-gray-700 font-bold mb-4">📊 Bilanciamento Finale</h3>
-                <div class="h-64"><canvas id="resultChart"></canvas></div>
-            </div>
-
-            <div v-if="hasResults" class="card border-t-4 border-green-500 bg-green-50">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold text-green-900">Risultato</h2>
-                    <button @click="exportExcel" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-bold shadow"><i class="fas fa-download"></i> Excel</button>
-                </div>
-                
-                <div v-if="rebalancingLog" class="bg-yellow-50 border border-yellow-200 p-3 rounded mb-4 text-xs text-yellow-800">
-                    <strong>⚠️ Intervento 'Robin Hood':</strong><br>
-                    <span class="whitespace-pre-line">{{ rebalancingLog }}</span>
-                </div>
-
-                <div class="bg-white p-3 rounded border border-green-200 mb-4 text-sm text-gray-700 whitespace-pre-line">
-                    <strong class="text-purple-600">AI Reasoning:</strong> {{ aiReasoning }}
-                </div>
-
-                <div v-if="mode === 'macro'" class="overflow-x-auto border rounded bg-white">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-100 text-xs uppercase">
-                            <tr><th class="p-3">Team</th><th class="p-3">Ptf</th><th class="p-3">Cedente</th><th class="p-3 text-right">Pratiche</th><th class="p-3 text-center">Stato</th></tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="(row, idx) in macroResults" :key="idx" class="border-b hover:bg-gray-50">
-                                <td class="p-3 font-bold text-indigo-700">{{ row.team_leader }}</td>
-                                <td class="p-3">{{ row.portfolio_name }}</td>
-                                <td class="p-3 text-gray-500">{{ row.cedant }}</td>
-                                <td class="p-3 text-right font-mono">{{ row.cases }}</td>
-                                <td class="p-3 text-center"><span v-if="row.is_new" class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded font-bold">NEW</span></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div v-if="mode !== 'macro'" class="overflow-x-auto border rounded bg-white max-h-80">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-100 text-xs uppercase sticky top-0">
-                            <tr><th class="p-3">ID</th><th class="p-3">Ptf</th><th class="p-3">Status</th><th class="p-3 bg-yellow-50">LM</th><th class="p-3 bg-blue-50">Team</th><th class="p-3">Nota</th></tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="row in assignedRows.slice(0, 100)" :key="row.id" class="border-b hover:bg-gray-50">
-                                <td class="p-3 font-mono text-xs">{{ row.id }}</td>
-                                <td class="p-3">{{ row.ptf }}</td>
-                                <td class="p-3">{{ row.status }}</td>
-                                <td class="p-3 font-bold bg-yellow-50">{{ row.assignedTo }}</td>
-                                <td class="p-3 bg-blue-50">{{ row.team }}</td>
-                                <td class="p-3 text-center text-xs"><span v-if="row.moved" class="bg-purple-100 text-purple-700 px-1 rounded">Spostato</span><span v-else-if="row.was_new" class="bg-green-100 text-green-700 px-1 rounded">Nuovo</span></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <div class="p-2 text-center text-xs text-gray-400">Mostrate prime 100 righe.</div>
-                </div>
-
-                <div class="mt-6 bg-slate-50 border-t-2 border-slate-200 p-4">
-                    <h4 class="font-bold text-slate-700 mb-2"><i class="fas fa-pencil-alt text-indigo-500"></i> Richiedi Correzione</h4>
-                    <p class="text-xs text-slate-500 mb-2">Non sei soddisfatto? Dai istruzioni specifiche all'AI e ricalcola.</p>
-                    <div class="flex gap-2">
-                        <textarea v-model="userCorrection" class="w-full border border-slate-300 rounded p-2 text-sm h-16 resize-none focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Es: Assegna il portafoglio 'Banca X' a John Lennon..."></textarea>
-                        <button @click="calculateAssignment" :disabled="isProcessing" class="bg-slate-800 text-white px-4 rounded hover:bg-slate-700 transition flex flex-col justify-center items-center w-32 disabled:opacity-50">
-                            <span v-if="!isProcessing" class="text-sm font-bold">Applica<br>Modifica</span>
-                            <span v-else class="loader border-white border-t-transparent w-6 h-6"></span>
-                        </button>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const { createApp } = Vue;
-
-        createApp({
-            data() {
-                return {
-                    apiKey: localStorage.getItem('aequo_api_key') || '',
-                    tempApiKey: '',
-                    isProcessing: false,
-                    showConfigModal: false,
-                    mode: 'macro', 
-                    availableModels: [],
-                    selectedModel: '',
-                    
-                    // --- BEATLES TEAMS ---
-                    teams: [
-                        { leader: 'John Lennon', managerInput: 'LM1, LM2, LM3, LM4, LM5', managers: ['LM1', 'LM2', 'LM3', 'LM4', 'LM5'] },
-                        { leader: 'Paul McCartney', managerInput: 'LM6, LM7, LM8, LM9, LM10', managers: ['LM6', 'LM7', 'LM8', 'LM9', 'LM10'] },
-                        { leader: 'George Harrison', managerInput: 'LM11, LM12, LM13, LM14, LM15', managers: ['LM11', 'LM12', 'LM13', 'LM14', 'LM15'] },
-                        { leader: 'Ringo Starr', managerInput: 'LM16, LM17, LM18, LM19, LM20', managers: ['LM16', 'LM17', 'LM18', 'LM19', 'LM20'] }
-                    ],
-                    
-                    manualPortfolios: [],
-                    rawRows: [],
-                    portfolioStats: [],
-                    assignedRows: [],
-                    macroResults: [],
-                    aiReasoning: '',
-                    rebalancingLog: '',
-                    userCorrection: '', // Nuova variabile per input utente
-                    chartInstance: null
-                }
-            },
-            computed: {
-                hasApiKey() { return this.apiKey && this.apiKey.length > 5; },
-                canProceed() { 
-                    if (this.mode === 'macro') return this.manualPortfolios.length > 0;
-                    return this.rawRows.length > 0; 
-                },
-                hasResults() { 
-                    return (this.mode === 'macro' && this.macroResults.length > 0) || 
-                           (this.mode !== 'macro' && this.assignedRows.length > 0); 
-                },
-                selectedModelShort() { return this.selectedModel ? this.selectedModel.split('/').pop().replace('gemini-', '').replace('-latest', '') : ''; }
-            },
-            watch: {
-                mode() { this.resetResults(); }
-            },
-            mounted() { if(this.hasApiKey) this.fetchModels(); },
-            methods: {
-                resetResults() { this.macroResults=[]; this.assignedRows=[]; this.aiReasoning=''; this.rebalancingLog=''; this.userCorrection=''; if(this.chartInstance) { this.chartInstance.destroy(); this.chartInstance = null; } this.rawRows = []; },
-                
-                async saveApiKey() { if(this.tempApiKey) { localStorage.setItem('aequo_api_key', this.tempApiKey); this.apiKey = this.tempApiKey; this.tempApiKey = ''; await this.fetchModels(); } },
-                resetApiKey() { localStorage.removeItem('aequo_api_key'); this.apiKey = ''; this.availableModels = []; this.selectedModel = ''; },
-                
-                async fetchModels() {
-                    try {
-                        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`);
-                        const d = await r.json();
-                        const gemini = d.models.filter(m => m.name.includes('gemini') && m.supportedGenerationMethods.includes('generateContent'));
-                        this.availableModels = gemini.map(m => ({ name: m.name, displayName: m.displayName || m.name.split('/').pop() }));
-                        let best = this.availableModels.find(m => m.name.includes('flash-latest')) || this.availableModels.find(m => m.name.includes('flash')) || this.availableModels[0];
-                        if(best) this.selectedModel = best.name;
-                    } catch(e) { alert("Errore Key: "+e.message); this.resetApiKey(); }
-                },
-
-                addTeam() { this.teams.push({ leader: '', managerInput: '', managers: ['LM1'] }); },
-                removeTeam(i) { this.teams.splice(i,1); },
-                parseManagers(i) {
-                    const raw = this.teams[i].managerInput;
-                    this.teams[i].managers = (raw && raw.trim()) ? raw.split(/,|\n/).map(n=>n.trim()).filter(n=>n.length>0) : [];
-                },
-                confirmConfig() { this.showConfigModal = false; },
-
-                addManualPortfolio() { this.manualPortfolios.push({ name: '', cedant: '', cases: 0, is_new: false }); },
-                removeManualPortfolio(i) { this.manualPortfolios.splice(i,1); },
-
-                handleMacroUpload(e) {
-                    this.processExcel(e, (headers, rows) => {
-                        const find = (k, def) => { const i = headers.findIndex(x => k.some(w => x.includes(w))); return i > -1 ? i : def; };
-                        const iName = find(['nome','proge','project','ptf'], 0);
-                        const iNdg = find(['ndg','pratic','num','#','cases'], 1);
-                        const iTipo = find(['tipo','new','stat'], 2);
-                        const iCed = find(['ced','bank','orig'], 3);
-
-                        const newPtfs = rows.map(r => {
-                            const cases = parseInt(r[iNdg]) || 0;
-                            if(cases <= 0) return null;
-                            const tipoVal = String(r[iTipo] || '').toLowerCase();
-                            return {
-                                name: r[iName] || 'Ptf Importato',
-                                cedant: r[iCed] || 'Unknown',
-                                cases: cases,
-                                is_new: tipoVal.includes('nuov') || tipoVal.includes('new')
-                            };
-                        }).filter(p => p !== null);
-
-                        this.manualPortfolios = newPtfs;
-                        alert(`Importati ${newPtfs.length} portafogli.`);
-                    });
-                },
-
-                handleDetailUpload(e) {
-                    this.processExcel(e, (headers, rows) => {
-                        this.rawRows = this.mapStandardColumns(headers, rows);
-                        this.portfolioStats = this.aggregateStats(this.rawRows);
-                    });
-                },
-
-                handleRebalanceUpload(e) {
-                    this.processExcel(e, (headers, rows) => {
-                        const find = (k, def) => { const i = headers.findIndex(x => k.some(w => x.includes(w))); return i > -1 ? i : def; };
-                        
-                        const iId = find(['id','soff','ndg'], 0);
-                        const iPtf = find(['por','ptf','nom'], 1);
-                        const iSt = find(['buck','stat','fasc'], 2);
-                        const iCed = find(['ced','ban','orig'], 3);
-                        const iTeam = find(['team','squadra','gruppo'], 4);
-                        const iAssegn = find(['assegn','lm','gestore','owner'], 5);
-
-                        const extractedTeams = {}; 
-                        
-                        this.rawRows = rows.map(r => {
-                            if (!r || r.length===0) return null;
-                            const teamVal = r[iTeam] ? String(r[iTeam]).trim() : null;
-                            const assignVal = r[iAssegn] ? String(r[iAssegn]).trim() : null;
-                            
-                            if (teamVal) {
-                                if(!extractedTeams[teamVal]) extractedTeams[teamVal] = new Set();
-                                if(assignVal) extractedTeams[teamVal].add(assignVal);
-                            }
-
-                            const isAssigned = (teamVal && teamVal !== '') && (assignVal && assignVal !== '');
-
-                            return {
-                                id: r[iId]||'N/A', 
-                                ptf: r[iPtf]||'Unknown', 
-                                status: r[iSt]||'Active', 
-                                cedant: r[iCed]||'Unknown',
-                                currentTeam: isAssigned ? teamVal : null,
-                                currentLM: isAssigned ? assignVal : null,
-                                was_new: !isAssigned
-                            };
-                        }).filter(r=>r && (r.id!=='N/A'||r.ptf!=='Unknown'));
-                        
-                        if (Object.keys(extractedTeams).length > 0) {
-                            this.teams = Object.keys(extractedTeams).map(leader => {
-                                const mngs = Array.from(extractedTeams[leader]);
-                                return { leader: leader, managers: mngs, managerInput: mngs.join(', ') };
-                            });
-                            this.showConfigModal = true;
-                        }
-
-                        this.portfolioStats = this.aggregateStatsForRebalance(this.rawRows);
-                    });
-                },
-
-                processExcel(e, callback) {
-                    const f = e.target.files[0]; if(!f) return;
-                    this.isProcessing = true;
-                    const r = new FileReader();
-                    r.onload = (ev) => {
-                        try {
-                            const wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array'});
-                            const sheet = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1});
-                            if(sheet.length<2) throw new Error("File vuoto");
-                            const h = sheet[0].map(x=>String(x).toLowerCase().trim());
-                            const rows = sheet.slice(1);
-                            callback(h, rows);
-                            this.isProcessing = false;
-                        } catch(err) { alert("Errore: "+err.message); this.isProcessing=false; }
-                    };
-                    r.readAsArrayBuffer(f);
-                },
-
-                mapStandardColumns(headers, rows) {
-                    const find = (k, def) => { const i = headers.findIndex(x => k.some(w => x.includes(w))); return i > -1 ? i : def; };
-                    const iId = find(['id','soff','ndg'], 0);
-                    const iPtf = find(['por','ptf','nom'], 1);
-                    const iSt = find(['buck','stat','fasc'], 2);
-                    const iCed = find(['ced','ban','orig'], 3);
-                    return rows.map(r => (!r || r.length===0) ? null : {
-                        id: r[iId]||'N/A', ptf: r[iPtf]||'Unknown', status: r[iSt]||'Active', cedant: r[iCed]||'Unknown', was_new: true
-                    }).filter(r=>r && (r.id!=='N/A'||r.ptf!=='Unknown'));
-                },
-
-                aggregateStats(rows) {
-                    const s = {};
-                    rows.forEach(r => {
-                        const k = r.ptf+"||"+r.cedant;
-                        if(!s[k]) s[k]={name:r.ptf, cedant:r.cedant, count:0, is_new: true};
-                        s[k].count++;
-                    });
-                    return Object.values(s);
-                },
-
-                aggregateStatsForRebalance(rows) {
-                    const s = {};
-                    rows.forEach(r => {
-                        const k = r.ptf+"||"+r.cedant;
-                        if(!s[k]) {
-                            s[k] = { name: r.ptf, cedant: r.cedant, count: 0, current_team: r.currentTeam || null, is_new: !r.currentTeam };
-                        }
-                        s[k].count++;
-                        if(r.currentTeam && !s[k].current_team) { s[k].current_team = r.currentTeam; s[k].is_new = false; }
-                    });
-                    return Object.values(s);
-                },
-
-                async calculateAssignment() {
-                    this.isProcessing = true;
-                    // Non resettiamo i rawRows, ma solo i risultati elaborati per permettere ricalcoli sulla stessa base
-                    this.macroResults=[]; this.assignedRows=[]; this.aiReasoning=''; this.rebalancingLog=''; if(this.chartInstance) { this.chartInstance.destroy(); this.chartInstance = null; }
-
-                    const teamsP = this.teams.map(t => ({ leader: t.leader, lm_count: t.managers.length }));
-                    let ptfP = [];
-
-                    if (this.mode === 'macro') {
-                        ptfP = this.manualPortfolios.map(p=>({ name: p.name, cedant: p.cedant, count: parseInt(p.cases), is_new: p.is_new, current_team: null }));
-                    } else {
-                        ptfP = this.portfolioStats;
-                    }
-
-                    const totalCases = ptfP.reduce((s,p)=>s+p.count,0);
-                    const totalLMs = teamsP.reduce((s,t)=>s+t.lm_count,0);
-                    const ideal = Math.round(totalCases/totalLMs);
-
-                    let promptInstruction = "";
-                    if (this.mode === 'rebalance') {
-                        promptInstruction = `
-                            MODALITÀ: RIBILANCIAMENTO.
-                            Alcuni portafogli hanno già un 'current_team'. Altri sono 'is_new' (null).
-                            REGOLE:
-                            1. Assegna i NUOVI.
-                            2. MANTIENI i GIÀ ASSEGNATI il più possibile, SPOSTALI SOLO SE serve per raggruppare cedenti o per equità numerica.
-                        `;
-                    } else {
-                        promptInstruction = `MODALITÀ: ASSEGNAZIONE NUOVA.`;
-                    }
-
-                    // --- INIEZIONE CORREZIONE UTENTE ---
-                    let userOverride = "";
-                    if (this.userCorrection && this.userCorrection.trim() !== "") {
-                        userOverride = `
-                        *** RICHIESTA DI MODIFICA PRIORITARIA DELL'UTENTE ***
-                        L'utente ha ordinato: "${this.userCorrection}"
-                        ESEGUI QUESTA ISTRUZIONE A TUTTI I COSTI, anche se viola parzialmente le altre regole.
-                        Poi bilancia il resto dei portafogli di conseguenza.
-                        `;
-                    }
-
-                    const prompt = `
-                        Agisci come algoritmo di logistica NPL.
-                        DATI:
-                        - Pratiche Tot: ${totalCases}, LM Tot: ${totalLMs}
-                        - Teams: ${JSON.stringify(teamsP)}
-                        - Portafogli: ${JSON.stringify(ptfP)}
-
-                        ${promptInstruction}
-                        ${userOverride}
-
-                        OBIETTIVO: Target ~${ideal} pratiche/LM.
-                        
-                        OUTPUT JSON ESCLUSIVAMENTE (senza testo):
-                        {
-                            "assignments": [{ "portfolio_name": "Nome", "team_leader": "NomeLeader", "cases": 123, "is_new": true/false }],
-                            "reasoning": "Spiegazione sintetica"
-                        }
-                    `;
-
-                    try {
-                        const u = `https://generativelanguage.googleapis.com/v1beta/${this.selectedModel||'gemini-1.5-flash'}:generateContent?key=${this.apiKey}`;
-                        const res = await fetch(u, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({contents:[{parts:[{text:prompt}]}]}) });
-                        const d = await res.json();
-                        if(d.error) throw new Error(d.error.message);
-
-                        let txt = d.candidates[0].content.parts[0].text.replace(/```json|```/g,'');
-                        const jsonStr = txt.substring(txt.indexOf('{'), txt.lastIndexOf('}')+1);
-                        const ai = JSON.parse(jsonStr);
-                        
-                        this.aiReasoning = ai.reasoning;
-
-                        if(this.mode === 'macro') {
-                            this.macroResults = ai.assignments;
-                        } else {
-                            this.applyDetailAssignment(ai.assignments);
-                            this.applyRobinHoodLogic_Detail(ideal);
-                        }
-
-                        this.$nextTick(()=>this.renderChart());
-
-                    } catch(e) { alert("Errore AI: "+e.message); } 
-                    finally { this.isProcessing=false; }
-                },
-
-                applyDetailAssignment(assigns) {
-                    const map = {}; assigns.forEach(a=>map[a.portfolio_name]=a.team_leader);
-                    const tMap = {}; this.teams.forEach(t=>tMap[t.leader.toLowerCase().trim()]=t);
-                    const grp = {};
-                    this.rawRows.forEach(r => { if(!grp[r.ptf]) grp[r.ptf]=[]; grp[r.ptf].push(r); });
-
-                    for(const [p, rows] of Object.entries(grp)) {
-                        rows.sort((a,b)=>(String(a.status)||'').localeCompare(String(b.status)||''));
-                        let leaderName = map[p] || '';
-                        let targetT = tMap[leaderName.toLowerCase().trim()];
-                        if(!targetT) targetT = this.teams[0]; 
-
-                        let i = 0;
-                        rows.forEach(r => {
-                            let finalLM = '';
-                            const teamChanged = (r.currentTeam && r.currentTeam !== targetT.leader);
-                            if (this.mode === 'rebalance' && r.currentLM && !teamChanged) {
-                                finalLM = r.currentLM;
-                            } else {
-                                finalLM = targetT.managers[i % targetT.managers.length] || 'LM1';
-                            }
-                            this.assignedRows.push({ ...r, team: targetT.leader, assignedTo: finalLM, moved: teamChanged });
-                            i++;
-                        });
-                    }
-                },
-
-                applyRobinHoodLogic_Detail(idealTarget) {
-                    const stats = {};
-                    this.teams.forEach(t => stats[t.leader] = { count: 0, managers: t.managers.length, obj: t });
-                    this.assignedRows.forEach(r => { if(stats[r.team]) stats[r.team].count++; });
-
-                    let rebalanced = false;
-                    let logs = [];
-
-                    for(let loop=0; loop<5; loop++) {
-                        let minT=null, maxT=null;
-                        let minLoad=Infinity, maxLoad=-Infinity;
-
-                        for(const k in stats) {
-                            const load = stats[k].count / stats[k].managers;
-                            if(load < minLoad) { minLoad = load; minT = k; }
-                            if(load > maxLoad) { maxLoad = load; maxT = k; }
-                        }
-                        const diff = maxLoad - minLoad;
-                        if(diff < (idealTarget * 0.2)) break;
-
-                        const amountToMove = Math.round((diff * stats[minT].managers) / 2);
-                        if(amountToMove <= 0) break;
-
-                        rebalanced = true;
-                        logs.push(`Giro ${loop+1}: Spostate ${amountToMove} da ${maxT} a ${minT}`);
-
-                        let moved = 0;
-                        for(let i=0; i<this.assignedRows.length; i++) {
-                            if(this.assignedRows[i].team === maxT) {
-                                this.assignedRows[i].team = minT;
-                                const tObj = stats[minT].obj;
-                                this.assignedRows[i].assignedTo = tObj.managers[moved % tObj.managers.length] || 'LM1';
-                                this.assignedRows[i].moved = true; 
-                                stats[maxT].count--; stats[minT].count++; moved++;
-                                if(moved >= amountToMove) break;
-                            }
-                        }
-                    }
-                    if(rebalanced) this.rebalancingLog = "Bilanciamento forzato attivo.\n" + logs.join("\n");
-                },
-                
-                renderChart() {
-                    const ctx = document.getElementById('resultChart').getContext('2d');
-                    if (this.chartInstance) this.chartInstance.destroy();
-                    const labels = this.teams.map(t => t.leader);
-                    const dataV = [];
-                    this.teams.forEach(t => {
-                        let cnt = (this.mode==='macro') 
-                            ? this.macroResults.filter(r=>r.team_leader===t.leader).reduce((s,x)=>s+x.cases,0)
-                            : this.assignedRows.filter(r=>r.team===t.leader).length;
-                        dataV.push(Math.round(cnt/(t.managers.length||1)));
-                    });
-                    this.chartInstance = new Chart(ctx, {
-                        type: 'bar',
-                        data: { labels: labels, datasets: [{ label: 'Pratiche / LM', data: dataV, backgroundColor: '#6366f1' }] },
-                        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
-                    });
-                },
-
-                exportExcel() {
-                    const wb = XLSX.utils.book_new();
-                    const ws = XLSX.utils.json_to_sheet(this.mode==='macro'?this.macroResults:this.assignedRows);
-                    XLSX.utils.book_append_sheet(wb, ws, "Export_Aequo");
-                    XLSX.writeFile(wb, "ADR_Result.xlsx");
-                }
-            }
-        }).mount('#app');
-    });
-</script>
-</body>
-</html>
