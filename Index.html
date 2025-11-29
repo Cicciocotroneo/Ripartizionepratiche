@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADR - Assegnazione Dinamica Risorse v9.0</title>
+    <title>ADR - Assegnazione Dinamica Risorse v10.0</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -25,10 +25,9 @@
         .tab-btn.active { color: #4f46e5; border-bottom-color: #4f46e5; background-color: #f8fafc; }
         .tab-btn:hover:not(.active) { color: #334155; border-bottom-color: #cbd5e1; }
 
-        /* MODAL STYLES (RIPRISTINATI E POTENZIATI) */
         .modal-overlay { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.6); z-index: 9999; /* Z-Index altissimo */
+            background: rgba(0,0,0,0.6); z-index: 9999; 
             display: flex; justify-content: center; align-items: center; 
             backdrop-filter: blur(2px);
         }
@@ -52,52 +51,43 @@
                 <h2 class="text-xl font-bold"><i class="fas fa-users-cog"></i> Configurazione Organigramma</h2>
                 <button @click="showConfigModal = false" class="text-white hover:text-gray-200 p-2"><i class="fas fa-times text-xl"></i></button>
             </div>
-            
             <div class="p-6 overflow-y-auto">
                 <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6 text-sm text-yellow-800">
-                    <p class="font-bold"><i class="fas fa-info-circle"></i> Modifica i Team</p>
-                    <p>Qui puoi aggiungere, rimuovere o rinominare i Team e spostare i Loan Manager (copia e incolla i nomi) prima che l'AI esegua il calcolo.</p>
+                    <p class="font-bold">Modifica i Team</p>
+                    <p>Definisci qui i Team Leader e i Loan Manager prima del calcolo.</p>
                 </div>
-
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div v-for="(team, idx) in teams" :key="idx" class="bg-gray-50 p-4 rounded-lg border-2 border-gray-200 shadow-sm relative group hover:border-indigo-300 transition">
                         <button @click="removeTeam(idx)" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 p-1"><i class="fas fa-trash"></i></button>
-                        
                         <div class="mb-3">
                             <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Nome Team</label>
                             <input type="text" v-model="team.leader" class="w-full font-bold bg-white border border-gray-300 rounded p-2 text-sm focus:border-indigo-500 outline-none">
                         </div>
-                        
                         <div>
                             <div class="flex justify-between items-center mb-1">
-                                <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Membri (Separati da virgola)</label>
+                                <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Membri</label>
                                 <span class="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full">{{ team.managers.length }}</span>
                             </div>
-                            <textarea v-model="team.managerInput" @blur="parseManagers(idx)" class="w-full bg-white border border-gray-300 rounded p-2 text-xs h-28 resize-none focus:border-indigo-500 outline-none" placeholder="Es: Mario, Luca, Giulia..."></textarea>
+                            <textarea v-model="team.managerInput" @blur="parseManagers(idx)" class="w-full bg-white border border-gray-300 rounded p-2 text-xs h-28 resize-none focus:border-indigo-500 outline-none" placeholder="Es: Mario, Luca..."></textarea>
                         </div>
                     </div>
-                    
                     <div @click="addTeam" class="border-2 border-dashed border-gray-300 rounded-lg flex flex-col justify-center items-center cursor-pointer hover:bg-gray-50 hover:border-indigo-400 transition h-64 text-gray-400 hover:text-indigo-500">
-                        <i class="fas fa-plus-circle text-4xl mb-2"></i>
-                        <span class="font-bold">Aggiungi Team</span>
+                        <i class="fas fa-plus-circle text-4xl mb-2"></i><span class="font-bold">Aggiungi Team</span>
                     </div>
                 </div>
             </div>
-
             <div class="bg-gray-100 p-4 border-t flex justify-end gap-3 sticky bottom-0 shrink-0">
                 <button @click="showConfigModal = false" class="px-5 py-2 text-gray-600 font-bold hover:bg-gray-200 rounded">Annulla</button>
-                <button @click="showConfigModal = false" class="px-6 py-2 bg-indigo-600 text-white rounded font-bold shadow hover:bg-indigo-700 transform active:scale-95 transition">
-                    <i class="fas fa-check"></i> Conferma Organigramma
-                </button>
+                <button @click="showConfigModal = false" class="px-6 py-2 bg-indigo-600 text-white rounded font-bold shadow hover:bg-indigo-700 transform active:scale-95 transition">Conferma</button>
             </div>
         </div>
     </div>
+
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-100">
         <div>
             <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                <i class="fas fa-balance-scale text-indigo-600"></i> ADR <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">v9.0 Restored</span>
+                <i class="fas fa-balance-scale text-indigo-600"></i> ADR <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">v10.0 Refinement</span>
             </h1>
-            <p class="text-xs text-gray-400 mt-1">Assegnazione Dinamica Risorse</p>
         </div>
         <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto items-center">
             <div v-if="hasApiKey && availableModels.length > 0" class="flex items-center gap-2 text-sm bg-gray-50 p-1 rounded border">
@@ -160,8 +150,7 @@
                     <input type="file" @change="handleDetailUpload" class="hidden" accept=".xlsx, .csv">
                 </label>
                 <div class="mt-3 p-2 bg-gray-50 border border-gray-200 rounded text-xs text-gray-500">
-                    <p class="font-bold">Colonne (Ordine flessibile):</p>
-                    ID, Portafoglio, Status, Cedente, <strong class="text-blue-600">Tipo</strong> (Opzionale: scrivi "Nuovo")
+                    <p class="font-bold">Colonne:</p> ID, Portafoglio, Status, Cedente, Tipo (Opz. "Nuovo")
                 </div>
             </div>
 
@@ -176,17 +165,15 @@
                     <input type="file" @change="handleRebalanceUpload" class="hidden" accept=".xlsx, .csv">
                 </label>
                 <div class="mt-3 p-3 bg-pink-50 border border-pink-100 rounded text-xs text-pink-800">
-                    <p class="font-bold mb-1">Logica:</p>
-                    <p>Righe con Team vuoto = "Nuove". Righe compilate = "Assegnate".</p>
+                    <p class="font-bold mb-1">Logica:</p> Righe con Team vuoto = "Nuove".
                 </div>
             </div>
 
             <div class="card border-l-4 border-indigo-500">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-lg font-bold text-gray-700">Organigramma</h2>
-                    
                     <button @click="showConfigModal = true" class="bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-bold py-1 px-3 rounded border border-yellow-300 shadow-sm transition flex items-center gap-2">
-                        <i class="fas fa-edit"></i> Modifica Organigramma
+                        <i class="fas fa-edit"></i> Modifica
                     </button>
                 </div>
                 <div class="space-y-4 max-h-[300px] overflow-y-auto custom-scroll pr-2">
@@ -210,28 +197,26 @@
             <div v-if="hasResults" class="card">
                 <h3 class="text-gray-700 font-bold mb-4">📊 Bilanciamento Finale</h3>
                 <div class="h-64"><canvas id="resultChart"></canvas></div>
-                <p class="text-xs text-center text-gray-400 mt-2">Pratiche per LM (Post-Processo)</p>
             </div>
 
-            <div v-if="hasResults" class="card border-t-4 border-green-500 bg-green-50">
+            <div v-if="hasResults" class="card border-t-4 border-green-500 bg-green-50 animate-fade-in">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-bold text-green-900">Risultato</h2>
                     <button @click="exportExcel" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-bold shadow"><i class="fas fa-download"></i> Excel</button>
                 </div>
                 
                 <div v-if="rebalancingLog" class="bg-yellow-50 border border-yellow-200 p-3 rounded mb-4 text-xs text-yellow-800">
-                    <strong>⚠️ Intervento 'Robin Hood':</strong><br>
-                    <span class="whitespace-pre-line">{{ rebalancingLog }}</span>
+                    <strong>⚠️ Auto-Correzione:</strong><br><span class="whitespace-pre-line">{{ rebalancingLog }}</span>
                 </div>
 
                 <div class="bg-white p-3 rounded border border-green-200 mb-4 text-sm text-gray-700 whitespace-pre-line">
-                    <strong class="text-purple-600">AI Reasoning:</strong> {{ aiReasoning }}
+                    <strong class="text-purple-600">AI Logic:</strong> {{ aiReasoning }}
                 </div>
 
                 <div v-if="mode === 'macro'" class="overflow-x-auto border rounded bg-white">
                     <table class="w-full text-sm text-left">
                         <thead class="bg-gray-100 text-xs uppercase text-gray-600">
-                            <tr><th class="p-3">Team</th><th class="p-3">Ptf</th><th class="p-3">Cedente</th><th class="p-3 text-right">Pratiche</th><th class="p-3 text-center">Info</th></tr>
+                            <tr><th class="p-3">Team</th><th class="p-3">Ptf</th><th class="p-3">Cedente</th><th class="p-3 text-right">Cases</th><th class="p-3 text-center">Stato</th></tr>
                         </thead>
                         <tbody>
                             <tr v-for="(row, idx) in macroResults" :key="idx" class="border-b hover:bg-gray-50">
@@ -245,22 +230,35 @@
                 <div v-if="mode !== 'macro'" class="overflow-x-auto border rounded bg-white max-h-96">
                     <table class="w-full text-sm text-left">
                         <thead class="bg-gray-100 text-xs uppercase text-gray-600 sticky top-0">
-                            <tr><th class="p-3">ID</th><th class="p-3">Ptf</th><th class="p-3">Status</th><th class="p-3 bg-yellow-50">LM</th><th class="p-3 bg-blue-50">Team</th><th class="p-3 text-center">Note</th></tr>
+                            <tr><th class="p-3">ID</th><th class="p-3">Ptf</th><th class="p-3 bg-yellow-50">LM</th><th class="p-3 bg-blue-50">Team</th><th class="p-3 text-center">Note</th></tr>
                         </thead>
                         <tbody>
                             <tr v-for="row in assignedRows.slice(0, 100)" :key="row.id" class="border-b hover:bg-gray-50">
-                                <td class="p-3 font-mono text-xs">{{ row.id }}</td><td class="p-3">{{ row.ptf }}</td><td class="p-3">{{ row.status }}</td><td class="p-3 font-bold bg-yellow-50">{{ row.assignedTo }}</td><td class="p-3 bg-blue-50">{{ row.team }}</td>
-                                <td class="p-3 text-center text-xs">
-                                    <span v-if="row.moved" class="bg-purple-100 text-purple-700 px-1 rounded">Spostato</span>
-                                    <span v-else-if="row.was_new || row.is_new" class="bg-green-100 text-green-700 px-1 rounded">Nuovo</span>
-                                </td>
+                                <td class="p-3 font-mono text-xs">{{ row.id }}</td><td class="p-3">{{ row.ptf }}</td><td class="p-3 font-bold bg-yellow-50">{{ row.assignedTo }}</td><td class="p-3 bg-blue-50">{{ row.team }}</td>
+                                <td class="p-3 text-center text-xs"><span v-if="row.moved" class="bg-purple-100 text-purple-700 px-1 rounded">Spostato</span><span v-else-if="row.was_new||row.is_new" class="bg-green-100 text-green-700 px-1 rounded">Nuovo</span></td>
                             </tr>
                         </tbody>
                     </table>
-                    <div class="p-2 text-center text-xs text-gray-400">Mostrate prime 100.</div>
+                    <div class="p-2 text-center text-xs text-gray-400">Prime 100 righe.</div>
                 </div>
             </div>
-        </div>
+
+            <div v-if="hasResults" class="card border-l-4 border-indigo-500 bg-indigo-50 animate-fade-in mt-6">
+                <h3 class="text-lg font-bold text-indigo-900 mb-2"><i class="fas fa-magic"></i> Modifica Assistita AI</h3>
+                <p class="text-sm text-indigo-700 mb-3">Chiedi all'AI di modificare l'assegnazione corrente (es: <em>"Sposta tutto il portafoglio Alpha al Team Ringo"</em> o <em>"Togli 200 pratiche a John"</em>).</p>
+                
+                <div class="flex gap-2">
+                    <input type="text" v-model="refinementPrompt" @keyup.enter="refineAssignment" 
+                        class="w-full p-3 rounded border border-indigo-300 focus:ring-2 focus:ring-indigo-500 outline-none" 
+                        placeholder="Scrivi qui la tua richiesta di modifica...">
+                    
+                    <button @click="refineAssignment" :disabled="isRefining" class="bg-indigo-600 text-white px-6 rounded font-bold hover:bg-indigo-700 transition flex items-center whitespace-nowrap">
+                        <span v-if="!isRefining">Applica</span>
+                        <span v-else class="loader border-white border-t-transparent w-4 h-4"></span>
+                    </button>
+                </div>
+            </div>
+            </div>
     </div>
 </div>
 
@@ -274,6 +272,8 @@
                     apiKey: localStorage.getItem('aequo_api_key') || '',
                     tempApiKey: '',
                     isProcessing: false,
+                    isRefining: false, // Stato per il box modifica
+                    refinementPrompt: '', // Testo utente per modifica
                     showConfigModal: false,
                     mode: 'macro', 
                     availableModels: [],
@@ -298,14 +298,8 @@
             },
             computed: {
                 hasApiKey() { return this.apiKey && this.apiKey.length > 5; },
-                canProceed() { 
-                    if (this.mode === 'macro') return this.manualPortfolios.length > 0;
-                    return this.rawRows.length > 0; 
-                },
-                hasResults() { 
-                    return (this.mode === 'macro' && this.macroResults.length > 0) || 
-                           (this.mode !== 'macro' && this.assignedRows.length > 0); 
-                },
+                canProceed() { return (this.mode === 'macro' && this.manualPortfolios.length > 0) || (this.mode !== 'macro' && this.rawRows.length > 0); },
+                hasResults() { return (this.mode === 'macro' && this.macroResults.length > 0) || (this.mode !== 'macro' && this.assignedRows.length > 0); },
                 selectedModelShort() { return this.selectedModel ? this.selectedModel.split('/').pop().replace('gemini-', '').replace('-latest', '') : ''; }
             },
             watch: {
@@ -314,7 +308,6 @@
             mounted() { if(this.hasApiKey) this.fetchModels(); },
             methods: {
                 resetResults() { this.macroResults=[]; this.assignedRows=[]; this.aiReasoning=''; this.rebalancingLog=''; if(this.chartInstance) { this.chartInstance.destroy(); this.chartInstance = null; } this.rawRows = []; },
-                
                 async saveApiKey() { if(this.tempApiKey) { localStorage.setItem('aequo_api_key', this.tempApiKey); this.apiKey = this.tempApiKey; this.tempApiKey = ''; await this.fetchModels(); } },
                 resetApiKey() { localStorage.removeItem('aequo_api_key'); this.apiKey = ''; this.availableModels = []; this.selectedModel = ''; },
                 
@@ -358,7 +351,6 @@
                     r.readAsArrayBuffer(f);
                 },
 
-                // --- UPLOAD HANDLERS ---
                 handleMacroUpload(e) {
                     this.processExcel(e, (headers, rows) => {
                         const find = (k, def) => { const i = headers.findIndex(x => k.some(w => x.includes(w))); return i > -1 ? i : def; };
@@ -366,7 +358,6 @@
                         const iNdg = find(['ndg','pratic','num','#','cases'], 1);
                         const iTipo = find(['tipo','new','stat'], 2);
                         const iCed = find(['ced','bank','orig'], 3);
-
                         const newPtfs = rows.map(r => {
                             const cases = parseInt(r[iNdg]) || 0;
                             if(cases <= 0) return null;
@@ -386,15 +377,10 @@
                         const iSt = find(['buck','stat','fasc'], 2);
                         const iCed = find(['ced','ban','orig'], 3);
                         const iTipo = find(['tipo','info','new'], 4); 
-
                         this.rawRows = rows.map(r => (!r || r.length===0) ? null : {
-                            id: r[iId]||'N/A', 
-                            ptf: r[iPtf]||'Unknown', 
-                            status: r[iSt]||'Active', 
-                            cedant: r[iCed]||'Unknown',
+                            id: r[iId]||'N/A', ptf: r[iPtf]||'Unknown', status: r[iSt]||'Active', cedant: r[iCed]||'Unknown',
                             is_new: r[iTipo] ? (String(r[iTipo]).toLowerCase().includes('nuov') || String(r[iTipo]).toLowerCase().includes('new')) : false
                         }).filter(r=>r && (r.id!=='N/A'||r.ptf!=='Unknown'));
-                        
                         const s = {};
                         this.rawRows.forEach(r => {
                             const k = r.ptf+"||"+r.cedant;
@@ -413,11 +399,9 @@
                         const iPtf = find(['por','ptf','nom'], 1);
                         const iSt = find(['buck','stat','fasc'], 2);
                         const iCed = find(['ced','ban','orig'], 3);
-                        const iTeam = find(['team','squadra','gruppo','resp'], 4); // Added 'resp'
+                        const iTeam = find(['team','squadra','gruppo','resp'], 4); 
                         const iAssegn = find(['assegn','lm','gestore','owner'], 5);
-
                         const extractedTeams = {}; 
-                        
                         this.rawRows = rows.map(r => {
                             if (!r || r.length===0) return null;
                             const teamVal = r[iTeam] ? String(r[iTeam]).trim() : null;
@@ -432,7 +416,6 @@
                                 currentTeam: isAssigned ? teamVal : null, currentLM: isAssigned ? assignVal : null, was_new: !isAssigned
                             };
                         }).filter(r=>r && (r.id!=='N/A'||r.ptf!=='Unknown'));
-                        
                         if (Object.keys(extractedTeams).length > 0) {
                             this.teams = Object.keys(extractedTeams).map(leader => {
                                 const mngs = Array.from(extractedTeams[leader]);
@@ -440,7 +423,6 @@
                             });
                             this.showConfigModal = true;
                         }
-                        
                         const s = {};
                         this.rawRows.forEach(r => {
                             const k = r.ptf+"||"+r.cedant;
@@ -452,32 +434,90 @@
                     });
                 },
 
-                // --- CALCOLO ---
+                // --- CALCOLO PRINCIPALE ---
                 async calculateAssignment() {
                     this.isProcessing = true;
                     this.resetResultsOnly();
+                    await this.runAiAllocation(null); // Null = nessun refinement, primo giro
+                    this.isProcessing = false;
+                },
 
+                // --- FUNZIONE DI REFINE (MODIFICA MANUALE) ---
+                async refineAssignment() {
+                    if(!this.refinementPrompt.trim()) return;
+                    this.isRefining = true;
+                    // Invia lo stato attuale (macroResults o aggregati di assignedRows) + istruzione utente
+                    await this.runAiAllocation(this.refinementPrompt);
+                    this.refinementPrompt = ''; // Pulisci input
+                    this.isRefining = false;
+                },
+
+                // --- CORE LOGIC (UNIFICATA) ---
+                async runAiAllocation(userRefinementInstruction) {
                     const teamsP = this.teams.map(t => ({ leader: t.leader, lm_count: t.managers.length }));
-                    let ptfP = (this.mode === 'macro') ? 
-                        this.manualPortfolios.map(p=>({ name: p.name, cedant: p.cedant, count: parseInt(p.cases), is_new: p.is_new, current_team: null })) : 
-                        this.portfolioStats;
+                    let ptfP = [];
+
+                    // Se è un Refinement, dobbiamo partire dallo STATO ATTUALE
+                    if (userRefinementInstruction && this.mode === 'macro') {
+                        ptfP = this.macroResults.map(r => ({
+                            name: r.portfolio_name, cedant: r.cedant, count: r.cases, is_new: r.is_new,
+                            current_team: r.team_leader // IMPORTANTE: Diciamo all'AI dove sono ora
+                        }));
+                    } else if (userRefinementInstruction && this.mode !== 'macro') {
+                        // Per Detail/Rebalance, raggruppiamo le assegnazioni attuali
+                        const tempStats = {};
+                        this.assignedRows.forEach(r => {
+                            const k = r.ptf+"||"+r.cedant;
+                            if(!tempStats[k]) tempStats[k] = { 
+                                name: r.ptf, cedant: r.cedant, count: 0, 
+                                current_team: r.team, // Stato attuale post-calcolo
+                                is_new: r.was_new || r.is_new 
+                            };
+                            tempStats[k].count++;
+                        });
+                        ptfP = Object.values(tempStats);
+                    } 
+                    else {
+                        // Primo calcolo (Standard)
+                        if (this.mode === 'macro') {
+                            ptfP = this.manualPortfolios.map(p=>({ name: p.name, cedant: p.cedant, count: parseInt(p.cases), is_new: p.is_new, current_team: null }));
+                        } else {
+                            ptfP = this.portfolioStats;
+                        }
+                    }
 
                     const totalCases = ptfP.reduce((s,p)=>s+p.count,0);
                     const totalLMs = teamsP.reduce((s,t)=>s+t.lm_count,0);
                     const ideal = Math.round(totalCases/totalLMs);
 
-                    let promptInstruction = (this.mode === 'rebalance') ? 
-                        `MODALITÀ: RIBILANCIAMENTO. Alcuni portafogli hanno già un 'current_team'. Altri sono 'is_new' (null). REGOLE: 1. Assegna NUOVI. 2. GIÀ ASSEGNATI: Mantieni se possibile, sposta SOLO per raggruppare cedenti o target.` : 
-                        `MODALITÀ: ASSEGNAZIONE. Assegna tutto.`;
+                    let promptContext = "";
+                    if (userRefinementInstruction) {
+                        promptContext = `
+                            **MODALITÀ: MODIFICA MANUALE (REFINEMENT)**
+                            STATO ATTUALE: I portafogli sono già assegnati come indicato in 'current_team'.
+                            RICHIESTA UTENTE: "${userRefinementInstruction}"
+                            
+                            OBIETTIVO:
+                            1. Modifica l'assegnazione SOLO per soddisfare la richiesta dell'utente.
+                            2. Mantieni il resto inalterato a meno che non sia necessario spostare altro per compensare forti squilibri creati dalla modifica.
+                        `;
+                    } else {
+                        // Prompt Standard per primo calcolo
+                        let modeInstr = (this.mode === 'rebalance') ? 
+                            `MODALITÀ: RIBILANCIAMENTO (Start). Assegna Nuovi, mantieni Esistenti se ok.` : 
+                            `MODALITÀ: ASSEGNAZIONE NUOVA.`;
+                        promptContext = `${modeInstr} Target ~${ideal} pratiche/LM.`;
+                    }
 
                     const prompt = `
                         Agisci come algoritmo di logistica NPL.
                         DATI: Pratiche Tot: ${totalCases}, LM Tot: ${totalLMs}
                         Teams: ${JSON.stringify(teamsP)}
-                        Portafogli: ${JSON.stringify(ptfP)}
-                        ${promptInstruction}
-                        OBIETTIVO: Target ~${ideal} pratiche/LM.
-                        OUTPUT JSON ESCLUSIVAMENTE (no testo):
+                        Portafogli (con stato): ${JSON.stringify(ptfP)}
+
+                        ${promptContext}
+
+                        OUTPUT JSON ESCLUSIVAMENTE (senza testo):
                         {
                             "assignments": [{ "portfolio_name": "Nome", "team_leader": "NomeLeader", "cases": 123, "is_new": true/false }],
                             "reasoning": "Spiegazione sintetica"
@@ -496,15 +536,21 @@
                         
                         this.aiReasoning = ai.reasoning;
 
+                        // Se è un refinement, puliamo i risultati precedenti per sovrascriverli
+                        if (userRefinementInstruction) {
+                            if (this.mode === 'macro') this.macroResults = [];
+                            else this.assignedRows = [];
+                        }
+
                         if(this.mode === 'macro') {
                             this.macroResults = ai.assignments;
                         } else {
                             this.applyDetailAssignment(ai.assignments);
-                            this.applyRobinHoodLogic_Detail(ideal);
+                            // Applichiamo Robin Hood solo al primo giro, non durante le modifiche manuali (altrimenti annulla la modifica dell'utente)
+                            if (!userRefinementInstruction) this.applyRobinHoodLogic_Detail(ideal);
                         }
                         this.$nextTick(()=>this.renderChart());
-                    } catch(e) { alert("Errore AI: "+e.message); } 
-                    finally { this.isProcessing=false; }
+                    } catch(e) { alert("Errore AI: "+e.message); }
                 },
                 
                 resetResultsOnly() {
