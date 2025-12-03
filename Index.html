@@ -498,7 +498,8 @@
                     if (userRefinementInstruction) {
                         promptContext = `MODALITÀ: MODIFICA MANUALE. STATO ATTUALE: vedi 'current_team'. RICHIESTA: "${userRefinementInstruction}". OBIETTIVO: Soddisfa la richiesta, mantieni il resto.`;
                     } else {
-                        let modeInstr = (this.mode === 'rebalance') ? `MODALITÀ: RIBILANCIAMENTO. Assegna Nuovi, sposta Esistenti SOLO SE necessario.` : `MODALITÀ: ASSEGNAZIONE NUOVA.`;
+                        let modeInstr = (this.mode === 'rebalance') ? `MODALITÀ: RIBILANCIAMENTO. Assegna Nuovi portafogli, TASSATIVAMENTE limita gli spostamenti di pratiche attualmente già assegnate SOLO SE necessario al ribilanciamento del numero di pratiche per LM o per accorpare banche cedenti sotto un solo team. In questo caso, tuttavia, DEVI limitarti a spostare SOLO i portafogli il cui numero sia sufficiente a eseguire il bilanciamento dei volumi di pratiche gestite e NON devi stravolgere il resto delle assegnazioni` 
+                        : `MODALITÀ: ASSEGNAZIONE NUOVA.`;
                         promptContext = `${modeInstr} Target ~${ideal} pratiche/LM.`;
                     }
 
